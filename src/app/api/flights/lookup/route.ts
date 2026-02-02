@@ -1,5 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface AviationStackResponse {
+  error?: unknown;
+  data?: Array<{
+    departure?: { iata?: string; scheduled?: string };
+    arrival?: { iata?: string; scheduled?: string };
+    airline?: { name?: string };
+  }>;
+}
+
+async function fetchFlights(
+  apiKey: string,
+  flightIata: string,
+  flightDate?: string | null
+): Promise<AviationStackResponse | null> {
+  const url = new URL("http://api.aviationstack.com/v1/flights");
+  url.searchParams.set("access_key", apiKey);
+  url.searchParams.set("flight_iata", flightIata);
+  if (flightDate) {
+    url.searchParams.set("flight_date", flightDate);
+  }
+  url.searchParams.set("limit", "5");
+
+  const response = await fetch(url.toString());
+  if (!response.ok) return null;
+
+  const data: AviationStackResponse = await response.json();
+  if (data.error) return null;
+
+  return data;
+}
+
 export async function GET(request: NextRequest) {
   const apiKey = process.env.AVIATIONSTACK_API_KEY;
   if (!apiKey) {
@@ -21,33 +52,16 @@ export async function GET(request: NextRequest) {
   const flightDate = request.nextUrl.searchParams.get("flight_date");
 
   try {
-    const url = new URL("http://api.aviationstack.com/v1/flights");
-    url.searchParams.set("access_key", apiKey);
-    url.searchParams.set("flight_iata", normalized);
-    if (flightDate) {
-      url.searchParams.set("flight_date", flightDate);
-    }
-    url.searchParams.set("limit", "5");
+    // Try with flight_date first, fall back to without it (free tier may not support it)
+    let data = flightDate
+      ? await fetchFlights(apiKey, normalized, flightDate)
+      : null;
 
-    const response = await fetch(url.toString());
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: "Flight data service unavailable" },
-        { status: 502 }
-      );
+    if (!data || !data.data?.length) {
+      data = await fetchFlights(apiKey, normalized);
     }
 
-    const data = await response.json();
-
-    if (data.error) {
-      return NextResponse.json(
-        { error: "Flight data service error" },
-        { status: 502 }
-      );
-    }
-
-    if (!data.data || data.data.length === 0) {
+    if (!data || !data.data?.length) {
       return NextResponse.json(
         { error: "Flight not found" },
         { status: 404 }
