@@ -4,7 +4,7 @@ A travel planning app to organize trips, events, and prep lists.
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router) with TypeScript
+- **Framework**: Next.js 15 (App Router) with TypeScript
 - **UI**: shadcn/ui + Tailwind CSS v4
 - **Backend/DB**: Supabase (Postgres)
 - **Hosting**: Vercel
@@ -18,6 +18,11 @@ A travel planning app to organize trips, events, and prep lists.
 - **Calendar View** -- Interactive calendar highlighting trip dates and event days, with a detail panel for selected dates
 - **Prep List** -- Per-trip todo checklist with add, complete, and delete functionality
 - **Day-Grouped Itinerary** -- Events organized chronologically by day
+- **Ocean Teal Design System** -- Custom color palette with polished UI across all views
+- **Toast Notifications** -- Real-time feedback via sonner for all CRUD operations
+- **Collapsible Event Form** -- Streamlined event creation with expandable detail fields
+- **Featured Trip Cards** -- Visual trip cards on the dashboard with destination highlights
+- **Contextual Delete Dialog** -- Confirmation dialogs for destructive actions
 
 ## Prerequisites
 
@@ -178,7 +183,6 @@ src/
       middleware.ts        # Session refresh logic (unused -- auth deferred)
     types.ts              # TypeScript types matching the DB schema
     utils.ts              # Utility functions (cn)
-  middleware.ts           # Next.js middleware entry point (passthrough)
 supabase/
   schema.sql              # Full database schema
 ```
@@ -188,3 +192,8 @@ supabase/
 **"Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"** -- You haven't pulled the environment variables locally. Run `vercel env pull .env.local`, or see step 3 above.
 
 **"relation 'trips' does not exist"** -- You haven't run the database schema yet. See step 4 above.
+
+## Roadmap
+
+- **Flight Number Lookup** -- Enter a flight number (e.g. UA123) and auto-fill departure/arrival times, route, and airline info via AviationStack API
+- **Google SSO Authentication** -- Sign in with Google via Supabase Auth, with row-level security scoping data to each user

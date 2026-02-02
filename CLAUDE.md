@@ -27,3 +27,4 @@
 ## Environment Variables
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `AVIATIONSTACK_API_KEY` - AviationStack API key for flight lookup (optional, server-side only)

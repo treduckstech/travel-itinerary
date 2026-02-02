@@ -23,8 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, ChevronDown } from "lucide-react";
-import type { TripEvent, EventType } from "@/lib/types";
+import { Plus, Pencil, ChevronDown, Search, Loader2 } from "lucide-react";
+import type { TripEvent, EventType, FlightLookupResult } from "@/lib/types";
 
 interface EventFormDialogProps {
   tripId: string;
@@ -53,6 +53,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [notes, setNotes] = useState(event?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(
     // Auto-expand if editing and optional fields have content
     !!(event && (event.description || event.location || event.confirmation_number || event.notes))
@@ -74,6 +75,47 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setShowDetails(false);
     }
     setError(null);
+  }
+
+  async function handleFlightLookup() {
+    if (!title.trim()) return;
+    setLookupLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(
+        `/api/flights/lookup?flight_iata=${encodeURIComponent(title.trim())}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Flight lookup failed");
+        setLookupLoading(false);
+        return;
+      }
+
+      const result = data as FlightLookupResult;
+      setTitle(result.title);
+      if (result.route) {
+        setLocation(result.route);
+      }
+      if (result.departure_time) {
+        setStartDatetime(
+          new Date(result.departure_time).toISOString().slice(0, 16)
+        );
+      }
+      if (result.arrival_time) {
+        setEndDatetime(
+          new Date(result.arrival_time).toISOString().slice(0, 16)
+        );
+      }
+      setShowDetails(true);
+      toast.success("Flight details filled in");
+    } catch {
+      setError("Failed to look up flight");
+    } finally {
+      setLookupLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -198,7 +240,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 id="event-title"
                 placeholder={
                   type === "flight"
-                    ? "United UA 123"
+                    ? "UA123"
                     : type === "hotel"
                     ? "Grand Hotel"
                     : type === "restaurant"
@@ -211,6 +253,24 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               />
             </div>
           </div>
+
+          {type === "flight" && title.trim() && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleFlightLookup}
+              disabled={lookupLoading}
+              className="w-full"
+            >
+              {lookupLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="mr-2 h-4 w-4" />
+              )}
+              {lookupLoading ? "Looking up flight..." : "Look up flight"}
+            </Button>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

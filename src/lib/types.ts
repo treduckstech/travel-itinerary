@@ -23,6 +23,15 @@ export interface TripEvent {
   created_at: string;
 }
 
+export interface FlightLookupResult {
+  title: string;
+  departure_airport: string;
+  arrival_airport: string;
+  departure_time: string | null;
+  arrival_time: string | null;
+  route: string;
+}
+
 export interface Todo {
   id: string;
   trip_id: string;
