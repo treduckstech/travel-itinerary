@@ -18,11 +18,15 @@ export async function GET(request: NextRequest) {
   }
 
   const normalized = flightIata.replace(/\s+/g, "").toUpperCase();
+  const flightDate = request.nextUrl.searchParams.get("flight_date");
 
   try {
     const url = new URL("http://api.aviationstack.com/v1/flights");
     url.searchParams.set("access_key", apiKey);
     url.searchParams.set("flight_iata", normalized);
+    if (flightDate) {
+      url.searchParams.set("flight_date", flightDate);
+    }
     url.searchParams.set("limit", "5");
 
     const response = await fetch(url.toString());
