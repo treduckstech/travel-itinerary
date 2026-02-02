@@ -75,19 +75,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     setLoading(true);
     setError(null);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setError("You must be logged in");
-      setLoading(false);
-      return;
-    }
-
     const eventData = {
       trip_id: tripId,
-      user_id: user.id,
       type,
       title,
       description: description || null,

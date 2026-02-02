@@ -9,16 +9,10 @@ import type { Trip } from "@/lib/types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
 
   const { data: trips } = await supabase
     .from("trips")
     .select("*")
-    .eq("user_id", user.id)
     .order("start_date", { ascending: true });
 
   const now = new Date().toISOString().split("T")[0];

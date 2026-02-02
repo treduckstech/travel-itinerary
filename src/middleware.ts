@@ -1,8 +1,9 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
+// Auth is deferred -- passthrough middleware for now.
+// To re-enable, import { updateSession } from "@/lib/supabase/middleware" and call it here.
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+export async function middleware(_request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {

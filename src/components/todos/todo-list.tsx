@@ -25,18 +25,8 @@ export function TodoList({ tripId, todos }: TodoListProps) {
     if (!newTitle.trim()) return;
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
     await supabase.from("todos").insert({
       trip_id: tripId,
-      user_id: user.id,
       title: newTitle.trim(),
     });
 

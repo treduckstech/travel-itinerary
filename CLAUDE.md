@@ -15,7 +15,7 @@
 ## Key Patterns
 - Server components fetch data using `@/lib/supabase/server`
 - Client components use `@/lib/supabase/client` for mutations
-- All database tables have RLS policies scoped to `auth.uid() = user_id`
+- Auth is deferred -- no login required, no RLS, no user_id columns. Auth files are kept but unused for easy re-enablement.
 - UI components are from shadcn/ui in `src/components/ui/`
 - Types in `src/lib/types.ts` mirror the database schema
 

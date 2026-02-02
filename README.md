@@ -6,8 +6,10 @@ A travel planning app to organize trips, events, and prep lists.
 
 - **Framework**: Next.js 16 (App Router) with TypeScript
 - **UI**: shadcn/ui + Tailwind CSS v4
-- **Backend/DB**: Supabase (Postgres + Auth + Row Level Security)
+- **Backend/DB**: Supabase (Postgres)
 - **Hosting**: Vercel
+
+> **Note**: Authentication is not yet implemented. The app currently works without login. Auth and Row Level Security will be added later.
 
 ## Features
 
@@ -16,7 +18,6 @@ A travel planning app to organize trips, events, and prep lists.
 - **Calendar View** -- Interactive calendar highlighting trip dates and event days, with a detail panel for selected dates
 - **Prep List** -- Per-trip todo checklist with add, complete, and delete functionality
 - **Day-Grouped Itinerary** -- Events organized chronologically by day
-- **Auth** -- Email/password signup and login via Supabase Auth, with middleware-based route protection
 
 ## Prerequisites
 
@@ -73,32 +74,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 4. Open the file `supabase/schema.sql` from this repo and copy its entire contents
 5. Paste it into the SQL editor and click **Run**
 
-This creates three tables (`trips`, `events`, `todos`), enables Row Level Security on all of them, and adds policies so each user can only access their own data. It also creates indexes for query performance.
+This creates three tables (`trips`, `events`, `todos`) with indexes for query performance.
 
-### 5. Configure Supabase Auth
-
-The app uses email/password authentication. By default, Supabase requires email confirmation. To adjust this:
-
-1. In the Supabase dashboard, go to **Authentication > Providers**
-2. Under **Email**, you can:
-   - **Keep email confirmations on** (default) -- users will receive a confirmation email after signup. Make sure your Supabase project has email sending configured (it works out of the box with Supabase's built-in email service, though with rate limits).
-   - **Disable email confirmations** (for development) -- toggle off "Confirm email" to let users sign in immediately after signup without checking email.
-
-For the auth callback to work correctly, add your site URLs:
-
-1. Go to **Authentication > URL Configuration**
-2. Set **Site URL** to your Vercel production domain (e.g. `https://travel-itinerary.vercel.app`)
-3. Under **Redirect URLs**, add:
-   - `http://localhost:3000/auth/callback` (for local development)
-   - `https://your-vercel-domain.vercel.app/auth/callback` (for production)
-
-### 6. Start the dev server
+### 5. Start the dev server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You'll be redirected to the login page. Click "Sign up" to create an account, then log in.
+Open [http://localhost:3000](http://localhost:3000) to start planning trips.
 
 ## Available Scripts
 
@@ -117,8 +101,6 @@ Since Supabase is provisioned through the Vercel Marketplace, the environment va
 2. If you haven't already, go to [vercel.com/new](https://vercel.com/new) and import the repository
 3. Deploy -- the Supabase environment variables (`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are already set by the marketplace integration
 
-Make sure your Supabase Auth redirect URLs include your production domain (see step 5 in Setup).
-
 ## Database Schema
 
 The app uses three tables:
@@ -127,7 +109,6 @@ The app uses three tables:
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | uuid | Primary key |
-| `user_id` | uuid | Owner (references `auth.users`) |
 | `name` | text | Trip name |
 | `destination` | text | Where you're going |
 | `start_date` | date | Trip start |
@@ -139,7 +120,6 @@ The app uses three tables:
 |--------|------|-------------|
 | `id` | uuid | Primary key |
 | `trip_id` | uuid | Parent trip |
-| `user_id` | uuid | Owner |
 | `type` | text | One of: `flight`, `hotel`, `restaurant`, `activity` |
 | `title` | text | Event name (airline/flight#, hotel name, etc.) |
 | `description` | text | Optional description |
@@ -155,13 +135,10 @@ The app uses three tables:
 |--------|------|-------------|
 | `id` | uuid | Primary key |
 | `trip_id` | uuid | Parent trip |
-| `user_id` | uuid | Owner |
 | `title` | text | Todo item text |
 | `completed` | boolean | Whether it's done |
 | `due_date` | date | Optional due date |
 | `created_at` | timestamptz | When the record was created |
-
-All tables have Row Level Security enabled. Users can only read, create, update, and delete their own rows.
 
 ## Project Structure
 
@@ -170,17 +147,17 @@ src/
   app/
     page.tsx              # Dashboard (upcoming + past trips)
     layout.tsx            # Root layout with header
-    login/page.tsx        # Login form
-    signup/page.tsx       # Signup form
-    auth/callback/route.ts # Supabase auth callback handler
+    login/page.tsx        # Login form (unused -- auth deferred)
+    signup/page.tsx       # Signup form (unused -- auth deferred)
+    auth/callback/route.ts # Auth callback handler (unused -- auth deferred)
     trips/
       new/page.tsx        # Create trip form
       [id]/page.tsx       # Trip detail (itinerary, calendar, prep list tabs)
       [id]/edit/page.tsx  # Edit trip form
   components/
-    header.tsx            # App header with user email + sign out
+    header.tsx            # App header with logo
     auth/
-      sign-out-button.tsx
+      sign-out-button.tsx # (unused -- auth deferred)
     calendar/
       trip-calendar.tsx   # Calendar view with event highlighting
     events/
@@ -198,20 +175,16 @@ src/
     supabase/
       client.ts           # Browser-side Supabase client
       server.ts           # Server-side Supabase client (uses cookies)
-      middleware.ts        # Session refresh + route protection logic
+      middleware.ts        # Session refresh logic (unused -- auth deferred)
     types.ts              # TypeScript types matching the DB schema
     utils.ts              # Utility functions (cn)
-  middleware.ts           # Next.js middleware entry point
+  middleware.ts           # Next.js middleware entry point (passthrough)
 supabase/
-  schema.sql              # Full database schema with RLS policies
+  schema.sql              # Full database schema
 ```
 
 ## Troubleshooting
 
 **"Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"** -- You haven't pulled the environment variables locally. Run `vercel env pull .env.local`, or see step 3 above.
 
-**Signup works but login says "Invalid login credentials"** -- If email confirmations are enabled, you need to click the confirmation link in your email before you can log in.
-
 **"relation 'trips' does not exist"** -- You haven't run the database schema yet. See step 4 above.
-
-**Auth callback redirects to login instead of the app** -- Make sure `http://localhost:3000/auth/callback` is in your Supabase Redirect URLs (Authentication > URL Configuration).

@@ -41,22 +41,11 @@ export function TripForm({ trip }: TripFormProps) {
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setError("You must be logged in");
-      setLoading(false);
-      return;
-    }
-
     const tripData = {
       name,
       destination,
       start_date: startDate,
       end_date: endDate,
-      user_id: user.id,
     };
 
     if (isEditing) {

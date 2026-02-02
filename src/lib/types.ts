@@ -2,7 +2,6 @@ export type EventType = "flight" | "hotel" | "restaurant" | "activity";
 
 export interface Trip {
   id: string;
-  user_id: string;
   name: string;
   destination: string;
   start_date: string;
@@ -13,7 +12,6 @@ export interface Trip {
 export interface TripEvent {
   id: string;
   trip_id: string;
-  user_id: string;
   type: EventType;
   title: string;
   description: string | null;
@@ -28,7 +26,6 @@ export interface TripEvent {
 export interface Todo {
   id: string;
   trip_id: string;
-  user_id: string;
   title: string;
   completed: boolean;
   due_date: string | null;
