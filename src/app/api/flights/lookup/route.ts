@@ -14,21 +14,25 @@ async function fetchFlights(
   flightIata: string,
   flightDate?: string | null
 ): Promise<AviationStackResponse | null> {
-  const url = new URL("http://api.aviationstack.com/v1/flights");
-  url.searchParams.set("access_key", apiKey);
-  url.searchParams.set("flight_iata", flightIata);
-  if (flightDate) {
-    url.searchParams.set("flight_date", flightDate);
+  try {
+    const url = new URL("http://api.aviationstack.com/v1/flights");
+    url.searchParams.set("access_key", apiKey);
+    url.searchParams.set("flight_iata", flightIata);
+    if (flightDate) {
+      url.searchParams.set("flight_date", flightDate);
+    }
+    url.searchParams.set("limit", "5");
+
+    const response = await fetch(url.toString());
+    if (!response.ok) return null;
+
+    const data: AviationStackResponse = await response.json();
+    if (data.error) return null;
+
+    return data;
+  } catch {
+    return null;
   }
-  url.searchParams.set("limit", "5");
-
-  const response = await fetch(url.toString());
-  if (!response.ok) return null;
-
-  const data: AviationStackResponse = await response.json();
-  if (data.error) return null;
-
-  return data;
 }
 
 export async function GET(request: NextRequest) {
