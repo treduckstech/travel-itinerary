@@ -22,7 +22,7 @@ A travel planning app to organize trips, events, and prep lists.
 
 - **Node.js 18+** -- check with `node -v`
 - **npm** -- comes with Node.js, check with `npm -v`
-- **A Supabase account** -- free tier at [supabase.com](https://supabase.com)
+- **A Vercel account** -- at [vercel.com](https://vercel.com)
 
 ## Setup
 
@@ -34,58 +34,65 @@ cd travel-itinerary
 npm install
 ```
 
-### 2. Create a Supabase project
+### 2. Add Supabase via the Vercel Marketplace
 
-1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) and sign in
-2. Click **New Project**
-3. Choose an organization, give it a name (e.g. "travel-itinerary"), set a database password, and pick a region
-4. Wait for the project to finish provisioning
+We provision Supabase through the Vercel Marketplace, just like our other apps.
 
-### 3. Get your Supabase credentials
+1. Go to your Vercel dashboard and select your project (or create one by importing this repo)
+2. Navigate to the **Storage** tab
+3. Click **Browse Marketplace** and select **Supabase**
+4. Click **Create** and follow the prompts to provision a new Supabase project (or connect an existing one)
+5. Vercel will automatically add the `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` environment variables to your project
 
-1. In your Supabase project dashboard, go to **Settings > API** (or click the gear icon, then "API" in the sidebar)
-2. You need two values:
-   - **Project URL** -- listed under "Project URL" (looks like `https://abcdefghijk.supabase.co`)
-   - **anon public key** -- listed under "Project API keys" > `anon` `public` (a long JWT string)
+Once provisioned, you can access the Supabase dashboard directly from the Vercel Storage tab by clicking on your Supabase integration.
 
-### 4. Configure environment variables
+### 3. Configure local environment variables
+
+Pull the Vercel-managed environment variables to your local machine:
+
+```bash
+vercel env pull .env.local
+```
+
+This populates `.env.local` with the Supabase credentials that Vercel set up for you. If you prefer to do it manually, copy the template and fill in the values from the Vercel project settings (Settings > Environment Variables):
 
 ```bash
 cp .env.local.example .env.local
 ```
-
-Open `.env.local` and fill in the values from step 3:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### 5. Set up the database
+### 4. Set up the database
 
-1. In your Supabase dashboard, go to **SQL Editor** (the terminal icon in the sidebar)
-2. Click **New query**
-3. Open the file `supabase/schema.sql` from this repo and copy its entire contents
-4. Paste it into the SQL editor and click **Run**
+1. Open the Supabase dashboard for your project (from Vercel: **Storage** tab > click your Supabase integration, or go directly to [supabase.com/dashboard](https://supabase.com/dashboard))
+2. Go to **SQL Editor** (the terminal icon in the sidebar)
+3. Click **New query**
+4. Open the file `supabase/schema.sql` from this repo and copy its entire contents
+5. Paste it into the SQL editor and click **Run**
 
 This creates three tables (`trips`, `events`, `todos`), enables Row Level Security on all of them, and adds policies so each user can only access their own data. It also creates indexes for query performance.
 
-### 6. Configure Supabase Auth
+### 5. Configure Supabase Auth
 
 The app uses email/password authentication. By default, Supabase requires email confirmation. To adjust this:
 
 1. In the Supabase dashboard, go to **Authentication > Providers**
 2. Under **Email**, you can:
-   - **Keep email confirmations on** (default) -- users will receive a confirmation email after signup. Make sure your Supabase project has email sending configured (it works out of the box on the free tier with Supabase's built-in email service, though with rate limits).
+   - **Keep email confirmations on** (default) -- users will receive a confirmation email after signup. Make sure your Supabase project has email sending configured (it works out of the box with Supabase's built-in email service, though with rate limits).
    - **Disable email confirmations** (for development) -- toggle off "Confirm email" to let users sign in immediately after signup without checking email.
 
-For the auth callback to work correctly, add your site URL:
+For the auth callback to work correctly, add your site URLs:
 
 1. Go to **Authentication > URL Configuration**
-2. Set **Site URL** to `http://localhost:3000` (for local development)
-3. Under **Redirect URLs**, add `http://localhost:3000/auth/callback`
+2. Set **Site URL** to your Vercel production domain (e.g. `https://travel-itinerary.vercel.app`)
+3. Under **Redirect URLs**, add:
+   - `http://localhost:3000/auth/callback` (for local development)
+   - `https://your-vercel-domain.vercel.app/auth/callback` (for production)
 
-### 7. Start the dev server
+### 6. Start the dev server
 
 ```bash
 npm run dev
@@ -104,17 +111,13 @@ Open [http://localhost:3000](http://localhost:3000). You'll be redirected to the
 
 ## Deploying to Vercel
 
+Since Supabase is provisioned through the Vercel Marketplace, the environment variables are already configured in your Vercel project. Just push to deploy:
+
 1. Push your repo to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) and import the repository
-3. Add the two environment variables in the Vercel project settings:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy
+2. If you haven't already, go to [vercel.com/new](https://vercel.com/new) and import the repository
+3. Deploy -- the Supabase environment variables (`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are already set by the marketplace integration
 
-After deploying, update your Supabase Auth settings:
-
-1. In **Authentication > URL Configuration**, update the **Site URL** to your Vercel domain (e.g. `https://travel-itinerary.vercel.app`)
-2. Add `https://travel-itinerary.vercel.app/auth/callback` to the **Redirect URLs**
+Make sure your Supabase Auth redirect URLs include your production domain (see step 5 in Setup).
 
 ## Database Schema
 
@@ -205,10 +208,10 @@ supabase/
 
 ## Troubleshooting
 
-**"Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"** -- You haven't created `.env.local` or the values are empty. See step 4 above.
+**"Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"** -- You haven't pulled the environment variables locally. Run `vercel env pull .env.local`, or see step 3 above.
 
 **Signup works but login says "Invalid login credentials"** -- If email confirmations are enabled, you need to click the confirmation link in your email before you can log in.
 
-**"relation 'trips' does not exist"** -- You haven't run the database schema yet. See step 5 above.
+**"relation 'trips' does not exist"** -- You haven't run the database schema yet. See step 4 above.
 
 **Auth callback redirects to login instead of the app** -- Make sure `http://localhost:3000/auth/callback` is in your Supabase Redirect URLs (Authentication > URL Configuration).
