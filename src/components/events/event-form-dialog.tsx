@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, ChevronDown } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 
 interface EventFormDialogProps {
@@ -52,6 +53,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [notes, setNotes] = useState(event?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showDetails, setShowDetails] = useState(
+    // Auto-expand if editing and optional fields have content
+    !!(event && (event.description || event.location || event.confirmation_number || event.notes))
+  );
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
@@ -66,6 +71,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setLocation("");
       setConfirmationNumber("");
       setNotes("");
+      setShowDetails(false);
     }
     setError(null);
   }
@@ -113,6 +119,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     setLoading(false);
     setOpen(false);
     resetForm();
+    toast.success(isEditing ? "Event updated" : "Event added");
     router.refresh();
   }
 
@@ -156,61 +163,53 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>Type</Label>
-            <Select
-              value={type}
-              onValueChange={(v) => setType(v as EventType)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(typeLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Required fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select
+                value={type}
+                onValueChange={(v) => setType(v as EventType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(typeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="event-title">
-              {type === "flight"
-                ? "Airline & Flight Number"
-                : type === "hotel"
-                ? "Hotel Name"
-                : type === "restaurant"
-                ? "Restaurant Name"
-                : "Activity Name"}
-            </Label>
-            <Input
-              id="event-title"
-              placeholder={
-                type === "flight"
-                  ? "United UA 123"
+            <div className="space-y-2">
+              <Label htmlFor="event-title">
+                {type === "flight"
+                  ? "Flight #"
                   : type === "hotel"
-                  ? "Grand Hotel"
+                  ? "Hotel Name"
                   : type === "restaurant"
-                  ? "Le Petit Bistro"
-                  : "City Walking Tour"
-              }
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="event-description">Description</Label>
-            <Textarea
-              id="event-description"
-              placeholder="Optional description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-            />
+                  ? "Restaurant"
+                  : "Activity"}
+              </Label>
+              <Input
+                id="event-title"
+                placeholder={
+                  type === "flight"
+                    ? "United UA 123"
+                    : type === "hotel"
+                    ? "Grand Hotel"
+                    : type === "restaurant"
+                    ? "Le Petit Bistro"
+                    : "City Walking Tour"
+                }
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -247,40 +246,65 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="event-location">Location</Label>
-            <Input
-              id="event-location"
-              placeholder={
-                type === "flight"
-                  ? "SFO → CDG"
-                  : "123 Main St"
-              }
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-          </div>
+          {/* Collapsible optional fields */}
+          {!showDetails ? (
+            <button
+              type="button"
+              onClick={() => setShowDetails(true)}
+              className="flex w-full items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+              More details (location, confirmation #, notes)
+            </button>
+          ) : (
+            <div className="space-y-4 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="event-location">Location</Label>
+                <Input
+                  id="event-location"
+                  placeholder={
+                    type === "flight"
+                      ? "SFO → CDG"
+                      : "123 Main St"
+                  }
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="event-confirmation">Confirmation Number</Label>
-            <Input
-              id="event-confirmation"
-              placeholder="ABC123"
-              value={confirmationNumber}
-              onChange={(e) => setConfirmationNumber(e.target.value)}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="event-confirmation">Confirmation Number</Label>
+                <Input
+                  id="event-confirmation"
+                  placeholder="ABC123"
+                  value={confirmationNumber}
+                  onChange={(e) => setConfirmationNumber(e.target.value)}
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="event-notes">Notes</Label>
-            <Textarea
-              id="event-notes"
-              placeholder="Additional notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="event-description">Description</Label>
+                <Textarea
+                  id="event-description"
+                  placeholder="Optional description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="event-notes">Notes</Label>
+                <Textarea
+                  id="event-notes"
+                  placeholder="Additional notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="submit" disabled={loading}>

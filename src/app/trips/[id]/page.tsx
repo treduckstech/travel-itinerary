@@ -85,7 +85,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               Edit
             </Button>
           </Link>
-          <DeleteTripButton tripId={id} />
+          <DeleteTripButton tripId={id} eventCount={typedEvents.length} todoCount={typedTodos.length} />
         </div>
       </div>
 

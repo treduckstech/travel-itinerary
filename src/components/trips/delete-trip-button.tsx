@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
 
-export function DeleteTripButton({ tripId }: { tripId: string }) {
+interface DeleteTripButtonProps {
+  tripId: string;
+  eventCount?: number;
+  todoCount?: number;
+}
+
+export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0 }: DeleteTripButtonProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -24,9 +31,14 @@ export function DeleteTripButton({ tripId }: { tripId: string }) {
   async function handleDelete() {
     setLoading(true);
     await supabase.from("trips").delete().eq("id", tripId);
+    toast.success("Trip deleted");
     router.push("/");
     router.refresh();
   }
+
+  const details: string[] = [];
+  if (eventCount > 0) details.push(`${eventCount} event${eventCount === 1 ? "" : "s"}`);
+  if (todoCount > 0) details.push(`${todoCount} todo${todoCount === 1 ? "" : "s"}`);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -40,8 +52,11 @@ export function DeleteTripButton({ tripId }: { tripId: string }) {
         <DialogHeader>
           <DialogTitle>Delete Trip</DialogTitle>
           <DialogDescription>
-            This will permanently delete this trip and all its events and todos.
-            This action cannot be undone.
+            This will permanently delete this trip
+            {details.length > 0
+              ? ` along with ${details.join(" and ")}`
+              : ""
+            }. This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

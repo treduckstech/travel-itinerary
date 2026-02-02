@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -22,10 +23,10 @@ const typeConfig: Record<
   EventType,
   { icon: React.ElementType; color: string }
 > = {
-  flight: { icon: Plane, color: "bg-blue-100 text-blue-700" },
-  hotel: { icon: Hotel, color: "bg-purple-100 text-purple-700" },
-  restaurant: { icon: UtensilsCrossed, color: "bg-orange-100 text-orange-700" },
-  activity: { icon: MapPin, color: "bg-green-100 text-green-700" },
+  flight: { icon: Plane, color: "bg-event-flight-bg text-event-flight" },
+  hotel: { icon: Hotel, color: "bg-event-hotel-bg text-event-hotel" },
+  restaurant: { icon: UtensilsCrossed, color: "bg-event-restaurant-bg text-event-restaurant" },
+  activity: { icon: MapPin, color: "bg-event-activity-bg text-event-activity" },
 };
 
 export function EventCard({ event }: { event: TripEvent }) {
@@ -36,6 +37,7 @@ export function EventCard({ event }: { event: TripEvent }) {
 
   async function handleDelete() {
     await supabase.from("events").delete().eq("id", event.id);
+    toast.success("Event deleted");
     router.refresh();
   }
 

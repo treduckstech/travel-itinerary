@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +60,7 @@ export function TripForm({ trip }: TripFormProps) {
         setLoading(false);
         return;
       }
+      toast.success("Trip updated");
       router.push(`/trips/${trip.id}`);
     } else {
       const { data, error } = await supabase
@@ -72,6 +74,7 @@ export function TripForm({ trip }: TripFormProps) {
         setLoading(false);
         return;
       }
+      toast.success("Trip created");
       router.push(`/trips/${data.id}`);
     }
 
