@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     const response = await fetch(url.toString());
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error("Google Distance Matrix API error:", response.status, errorBody);
       return NextResponse.json(
         { error: "Distance calculation failed" },
         { status: 502 }

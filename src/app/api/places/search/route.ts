@@ -39,6 +39,8 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error("Google Places API error:", response.status, errorBody);
       return NextResponse.json(
         { error: "Place search failed" },
         { status: 502 }

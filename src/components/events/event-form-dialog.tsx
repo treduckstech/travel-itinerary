@@ -105,6 +105,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     return "";
   });
+  const [driveFromAddress, setDriveFromAddress] = useState("");
+  const [driveToAddress, setDriveToAddress] = useState("");
   const [driveDuration, setDriveDuration] = useState<number | null>(null);
   const [driveLoading, setDriveLoading] = useState(false);
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
@@ -132,6 +134,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setArrStation("");
       setDriveFrom("");
       setDriveTo("");
+      setDriveFromAddress("");
+      setDriveToAddress("");
       setDriveDuration(null);
       setDriveLoading(false);
       setFlightDuration(null);
@@ -151,17 +155,21 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     if (type === "travel" && subType === "flight" && flightDuration && value) {
       setEndDatetime(computeArrival(value, flightDuration));
     }
-    if (type === "travel" && subType === "drive" && value && driveDuration) {
-      setEndDatetime(computeArrival(value, driveDuration));
+    if (type === "travel" && subType === "drive" && value) {
+      if (driveDuration) {
+        setEndDatetime(computeArrival(value, driveDuration));
+      } else if (driveFromAddress && driveToAddress) {
+        fetchDriveTime(driveFromAddress, driveToAddress, value);
+      }
     }
   }
 
-  async function fetchDriveTime(origin: string, destination: string) {
-    if (!origin.trim() || !destination.trim()) return;
+  async function fetchDriveTime(originAddr: string, destAddr: string, departure?: string) {
+    if (!originAddr.trim() || !destAddr.trim()) return;
     setDriveLoading(true);
     try {
       const res = await fetch(
-        `/api/places/distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`
+        `/api/places/distance?origin=${encodeURIComponent(originAddr)}&destination=${encodeURIComponent(destAddr)}`
       );
       if (!res.ok) {
         setDriveDuration(null);
@@ -170,8 +178,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       const data = await res.json();
       const minutes = data.duration_minutes as number;
       setDriveDuration(minutes);
-      if (startDatetime && minutes > 0) {
-        setEndDatetime(computeArrival(startDatetime, minutes));
+      const dep = departure ?? startDatetime;
+      if (dep && minutes > 0) {
+        setEndDatetime(computeArrival(dep, minutes));
       }
     } catch {
       setDriveDuration(null);
@@ -550,60 +559,51 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </Button>
               )}
 
-              <div className={type === "restaurant" ? "" : "grid grid-cols-2 gap-4"}>
-                <div className="space-y-2">
-                  <Label htmlFor="event-start">
-                    {type === "travel" && subType === "flight"
-                      ? "Departure"
-                      : type === "travel" && (subType === "train" || subType === "ferry")
-                      ? "Departure"
-                      : type === "travel" && subType === "drive"
-                      ? "Departure"
-                      : type === "hotel"
-                      ? "Check-in"
-                      : type === "restaurant"
-                      ? "Reservation Time"
-                      : "Start"}
-                  </Label>
-                  <Input
-                    id="event-start"
-                    type="datetime-local"
-                    value={startDatetime}
-                    onChange={(e) => handleDepartureChange(e.target.value)}
-                    required
-                  />
-                </div>
-                {type !== "restaurant" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="event-end">
-                      {type === "travel"
-                        ? "Arrival"
-                        : type === "hotel"
-                        ? "Check-out"
-                        : "End"}
-                    </Label>
-                    <Input
-                      id="event-end"
-                      type="datetime-local"
-                      value={endDatetime}
-                      onChange={(e) => setEndDatetime(e.target.value)}
-                    />
-                    {type === "travel" && subType === "flight" && flightDuration && (
-                      <p className="text-xs text-muted-foreground">
-                        Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
-                      </p>
-                    )}
-                    {type === "travel" && subType === "drive" && driveDuration != null && (
-                      <p className="text-xs text-muted-foreground">
-                        Auto-calculated from {Math.floor(driveDuration / 60)}h {driveDuration % 60}m drive
-                      </p>
-                    )}
+              {type === "travel" && subType === "drive" ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Origin</Label>
+                      <PlaceSearch
+                        id="drive-from"
+                        value={driveFrom}
+                        onSelect={(place: PlaceResult) => {
+                          setDriveFrom(place.name);
+                          setDriveFromAddress(place.address || place.name);
+                          const destAddr = driveToAddress || driveTo;
+                          if (destAddr) fetchDriveTime(place.address || place.name, destAddr);
+                        }}
+                        onManualEntry={(name: string) => {
+                          setDriveFrom(name);
+                          setDriveFromAddress(name);
+                          const destAddr = driveToAddress || driveTo;
+                          if (destAddr) fetchDriveTime(name, destAddr);
+                        }}
+                        placeholder="Search origin..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Destination</Label>
+                      <PlaceSearch
+                        id="drive-to"
+                        value={driveTo}
+                        onSelect={(place: PlaceResult) => {
+                          setDriveTo(place.name);
+                          setDriveToAddress(place.address || place.name);
+                          const origAddr = driveFromAddress || driveFrom;
+                          if (origAddr) fetchDriveTime(origAddr, place.address || place.name);
+                        }}
+                        onManualEntry={(name: string) => {
+                          setDriveTo(name);
+                          setDriveToAddress(name);
+                          const origAddr = driveFromAddress || driveFrom;
+                          if (origAddr) fetchDriveTime(origAddr, name);
+                        }}
+                        placeholder="Search destination..."
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {type === "travel" && subType === "drive" && (
-                <div className="space-y-2">
                   {driveLoading && (
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -615,7 +615,69 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       Drive time: {Math.floor(driveDuration / 60)}h {driveDuration % 60}m
                     </p>
                   )}
-                </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="event-start">Departure</Label>
+                    <Input
+                      id="event-start"
+                      type="datetime-local"
+                      value={startDatetime}
+                      onChange={(e) => handleDepartureChange(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {endDatetime && (
+                    <p className="text-sm text-muted-foreground">
+                      Arrival: {new Date(endDatetime).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className={type === "restaurant" ? "" : "grid grid-cols-2 gap-4"}>
+                    <div className="space-y-2">
+                      <Label htmlFor="event-start">
+                        {type === "travel" && (subType === "flight" || subType === "train" || subType === "ferry")
+                          ? "Departure"
+                          : type === "hotel"
+                          ? "Check-in"
+                          : type === "restaurant"
+                          ? "Reservation Time"
+                          : "Start"}
+                      </Label>
+                      <Input
+                        id="event-start"
+                        type="datetime-local"
+                        value={startDatetime}
+                        onChange={(e) => handleDepartureChange(e.target.value)}
+                        required
+                      />
+                    </div>
+                    {type !== "restaurant" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="event-end">
+                          {type === "travel"
+                            ? "Arrival"
+                            : type === "hotel"
+                            ? "Check-out"
+                            : "End"}
+                        </Label>
+                        <Input
+                          id="event-end"
+                          type="datetime-local"
+                          value={endDatetime}
+                          onChange={(e) => setEndDatetime(e.target.value)}
+                        />
+                        {type === "travel" && subType === "flight" && flightDuration && (
+                          <p className="text-xs text-muted-foreground">
+                            Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               {type === "travel" && subType === "flight" ? (
@@ -653,41 +715,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       value={arrStation}
                       onSelect={setArrStation}
                       placeholder="Arrival"
-                    />
-                  </div>
-                </div>
-              ) : type === "travel" && subType === "drive" ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Origin</Label>
-                    <PlaceSearch
-                      id="drive-from"
-                      value={driveFrom}
-                      onSelect={(place: PlaceResult) => {
-                        setDriveFrom(place.name);
-                        if (driveTo) fetchDriveTime(place.name, driveTo);
-                      }}
-                      onManualEntry={(name: string) => {
-                        setDriveFrom(name);
-                        if (driveTo) fetchDriveTime(name, driveTo);
-                      }}
-                      placeholder="Search origin..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Destination</Label>
-                    <PlaceSearch
-                      id="drive-to"
-                      value={driveTo}
-                      onSelect={(place: PlaceResult) => {
-                        setDriveTo(place.name);
-                        if (driveFrom) fetchDriveTime(driveFrom, place.name);
-                      }}
-                      onManualEntry={(name: string) => {
-                        setDriveTo(name);
-                        if (driveFrom) fetchDriveTime(driveFrom, name);
-                      }}
-                      placeholder="Search destination..."
                     />
                   </div>
                 </div>
