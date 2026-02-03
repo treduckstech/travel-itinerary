@@ -9,7 +9,7 @@ interface EventListProps {
 export function EventList({ events }: EventListProps) {
   if (events.length === 0) {
     return (
-      <p className="py-8 text-center text-muted-foreground">
+      <p className="py-12 text-center text-muted-foreground">
         No events yet. Add your first event!
       </p>
     );
@@ -26,12 +26,16 @@ export function EventList({ events }: EventListProps) {
   const sortedDates = Object.keys(grouped).sort();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {sortedDates.map((dateKey) => (
         <div key={dateKey}>
-          <h3 className="mb-3 font-semibold">
-            {format(parseISO(dateKey), "EEEE, MMMM d, yyyy")}
-          </h3>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <h3 className="shrink-0 font-display text-lg text-foreground/70">
+              {format(parseISO(dateKey), "EEEE, MMMM d")}
+            </h3>
+            <div className="h-px flex-1 bg-border" />
+          </div>
           <div className="space-y-3">
             {grouped[dateKey]
               .sort(

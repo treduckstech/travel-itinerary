@@ -84,7 +84,7 @@ export function TripForm({ trip }: TripFormProps) {
   return (
     <Card className="mx-auto max-w-lg">
       <CardHeader>
-        <CardTitle>{isEditing ? "Edit Trip" : "New Trip"}</CardTitle>
+        <CardTitle className="font-display text-2xl">{isEditing ? "Edit Trip" : "New Trip"}</CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">

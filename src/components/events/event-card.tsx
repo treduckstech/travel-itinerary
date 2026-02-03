@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -30,12 +28,12 @@ import type { TripEvent, EventType } from "@/lib/types";
 
 const typeConfig: Record<
   EventType,
-  { icon: React.ElementType; color: string }
+  { icon: React.ElementType; border: string; iconBg: string }
 > = {
-  flight: { icon: Plane, color: "bg-event-flight-bg text-event-flight" },
-  hotel: { icon: Hotel, color: "bg-event-hotel-bg text-event-hotel" },
-  restaurant: { icon: UtensilsCrossed, color: "bg-event-restaurant-bg text-event-restaurant" },
-  activity: { icon: MapPin, color: "bg-event-activity-bg text-event-activity" },
+  flight: { icon: Plane, border: "border-l-event-flight", iconBg: "bg-event-flight-bg text-event-flight" },
+  hotel: { icon: Hotel, border: "border-l-event-hotel", iconBg: "bg-event-hotel-bg text-event-hotel" },
+  restaurant: { icon: UtensilsCrossed, border: "border-l-event-restaurant", iconBg: "bg-event-restaurant-bg text-event-restaurant" },
+  activity: { icon: MapPin, border: "border-l-event-activity", iconBg: "bg-event-activity-bg text-event-activity" },
 };
 
 export function EventCard({ event }: { event: TripEvent }) {
@@ -60,62 +58,67 @@ export function EventCard({ event }: { event: TripEvent }) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <Badge variant="secondary" className={`shrink-0 px-1.5 ${config.color}`}>
-            <Icon className="h-3 w-3" />
-          </Badge>
-          <span className="truncate font-semibold">{event.title}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <EventFormDialog tripId={event.trip_id} event={event} />
-          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Event</DialogTitle>
-                <DialogDescription>
-                  This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={deleteLoading}
-                >
-                  {deleteLoading ? "Deleting..." : "Delete"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-1 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5" />
-          {format(new Date(event.start_datetime), "h:mm a")}
-          {event.end_datetime &&
-            ` - ${format(new Date(event.end_datetime), "h:mm a")}`}
-        </div>
-        {event.location && (
-          <div className="flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5" />
-            {event.location}
+    <div className={`group flex gap-3 rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-colors hover:bg-accent/30`}>
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconBg}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate font-semibold leading-tight">{event.title}</p>
+            <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {format(new Date(event.start_datetime), "h:mm a")}
+                {event.end_datetime &&
+                  ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
+              </span>
+              {event.location && (
+                <span className="flex items-center gap-1 truncate">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{event.location}</span>
+                </span>
+              )}
+            </div>
           </div>
-        )}
+
+          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <EventFormDialog tripId={event.trip_id} event={event} />
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Event</DialogTitle>
+                  <DialogDescription>
+                    This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={deleteLoading}
+                  >
+                    {deleteLoading ? "Deleting..." : "Delete"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
         {event.notes && (
-          <p className="pt-1 whitespace-pre-line">{event.notes}</p>
+          <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{event.notes}</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

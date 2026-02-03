@@ -22,10 +22,10 @@ const typeIcons: Record<EventType, React.ElementType> = {
 };
 
 const typeColors: Record<EventType, string> = {
-  flight: "bg-blue-100 text-blue-700",
-  hotel: "bg-purple-100 text-purple-700",
-  restaurant: "bg-orange-100 text-orange-700",
-  activity: "bg-green-100 text-green-700",
+  flight: "bg-event-flight-bg text-event-flight",
+  hotel: "bg-event-hotel-bg text-event-hotel",
+  restaurant: "bg-event-restaurant-bg text-event-restaurant",
+  activity: "bg-event-activity-bg text-event-activity",
 };
 
 interface TripCalendarProps {
@@ -74,9 +74,9 @@ export function TripCalendar({
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">
+          <CardTitle className="font-display text-lg">
             {selectedDate
-              ? format(selectedDate, "EEEE, MMMM d, yyyy")
+              ? format(selectedDate, "EEEE, MMMM d")
               : "Select a date"}
           </CardTitle>
         </CardHeader>

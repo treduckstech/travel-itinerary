@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar } from "lucide-react";
 import type { Trip } from "@/lib/types";
 
@@ -30,57 +29,54 @@ export function TripCard({ trip, featured = false }: TripCardProps) {
 
   function getCountdown() {
     if (status === "active") {
-      return daysLeft === 0 ? "Last day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
+      return daysLeft === 0 ? "Last day!" : `${daysLeft}d left`;
     }
     if (status === "upcoming") {
-      if (daysUntil === 0) return "Starts today!";
+      if (daysUntil === 0) return "Today!";
       if (daysUntil === 1) return "Tomorrow!";
-      if (daysUntil <= 14) return `${daysUntil} days away`;
+      if (daysUntil <= 14) return `${daysUntil}d away`;
     }
     return null;
   }
 
   const countdown = getCountdown();
 
+  const borderColor =
+    status === "active"
+      ? "border-l-event-activity"
+      : status === "upcoming"
+      ? "border-l-primary"
+      : "border-l-transparent";
+
   return (
     <Link href={`/trips/${trip.id}`} className={featured ? "sm:col-span-2 lg:col-span-2" : ""}>
-      <Card className={`transition-colors hover:bg-accent/50 ${
-        featured ? "border-primary/20 shadow-sm" : ""
-      } ${status === "active" ? "border-event-activity/30" : ""}`}>
+      <Card className={`border-l-4 ${borderColor} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${
+        featured ? "shadow-sm" : ""
+      } ${status === "past" ? "opacity-75" : ""}`}>
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className={`truncate ${featured ? "text-xl" : "text-lg"}`}>{trip.name}</CardTitle>
-            <div className="flex shrink-0 items-center gap-2">
-              {countdown && (
-                <span className={`text-xs font-medium ${
-                  status === "active" ? "text-event-activity" : "text-primary"
-                }`}>
-                  {countdown}
-                </span>
-              )}
-              <Badge
-                variant={status === "past" ? "outline" : "default"}
-                className={
-                  status === "active"
-                    ? "bg-event-activity-bg text-event-activity border-event-activity/20"
-                    : status === "upcoming"
-                    ? "bg-primary text-primary-foreground"
-                    : ""
-                }
-              >
-                {status}
-              </Badge>
-            </div>
+            <CardTitle className={`truncate font-display ${featured ? "text-2xl" : "text-lg"}`}>
+              {trip.name}
+            </CardTitle>
+            {countdown && (
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                status === "active"
+                  ? "bg-event-activity-bg text-event-activity"
+                  : "bg-warm/10 text-warm"
+              }`}>
+                {countdown}
+              </span>
+            )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 shrink-0" />
+        <CardContent className="space-y-1.5">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground/70">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{trip.destination}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 shrink-0" />
-            {format(start, "MMM d")} - {format(end, "MMM d, yyyy")}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5 shrink-0" />
+            {format(start, "MMM d")} – {format(end, "MMM d, yyyy")}
           </div>
         </CardContent>
       </Card>

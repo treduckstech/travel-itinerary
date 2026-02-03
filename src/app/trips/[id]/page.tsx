@@ -49,18 +49,18 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   const typedTodos = (todos as Todo[] | null) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{typedTrip.name}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
+          <h1 className="font-display text-4xl sm:text-5xl">{typedTrip.name}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-5 text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-base font-medium text-foreground/70">
+              <MapPin className="h-4 w-4 text-primary" />
               {typedTrip.destination}
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5 text-sm">
               <Calendar className="h-4 w-4" />
-              {format(new Date(typedTrip.start_date + "T00:00:00"), "MMM d")} -{" "}
+              {format(new Date(typedTrip.start_date + "T00:00:00"), "MMM d")} –{" "}
               {format(
                 new Date(typedTrip.end_date + "T00:00:00"),
                 "MMM d, yyyy"

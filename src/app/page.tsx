@@ -26,26 +26,28 @@ export default async function DashboardPage() {
   const hasTrips = upcomingTrips.length > 0 || pastTrips.length > 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {hasTrips ? (
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">My Trips</h1>
+        <div className="flex items-end justify-between">
+          <h1 className="font-display text-4xl">My Trips</h1>
           <Link href="/trips/new">
-            <Button>
+            <Button className="bg-warm text-warm-foreground hover:bg-warm/90">
               <Plus className="mr-2 h-4 w-4" />
               New Trip
             </Button>
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-          <MapPin className="mb-4 h-8 w-8 text-muted-foreground" />
-          <h2 className="mb-2 text-xl font-semibold">Plan your next adventure</h2>
-          <p className="mb-6 max-w-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+            <MapPin className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="mb-3 font-display text-3xl">Where to next?</h2>
+          <p className="mb-8 max-w-sm text-muted-foreground">
             Organize flights, hotels, activities, and your packing list in one place.
           </p>
           <Link href="/trips/new">
-            <Button size="lg">
+            <Button size="lg" className="bg-warm text-warm-foreground hover:bg-warm/90">
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Trip
             </Button>
@@ -55,7 +57,7 @@ export default async function DashboardPage() {
 
       {upcomingTrips.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Upcoming</h2>
+          <h2 className="mb-5 font-display text-2xl">Upcoming</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingTrips.map((trip, i) => (
               <TripCard key={trip.id} trip={trip} featured={i === 0 && upcomingTrips.length > 1} />
@@ -66,7 +68,7 @@ export default async function DashboardPage() {
 
       {pastTrips.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-semibold text-muted-foreground">
+          <h2 className="mb-5 font-display text-2xl text-muted-foreground">
             Past
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
