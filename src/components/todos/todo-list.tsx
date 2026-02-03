@@ -103,7 +103,7 @@ export function TodoList({ tripId, todos }: TodoListProps) {
 
       <form onSubmit={handleAdd} className="flex gap-2">
         <Input
-          placeholder="Add a todo item..."
+          placeholder="Add a prep item..."
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           maxLength={200}
@@ -114,9 +114,23 @@ export function TodoList({ tripId, todos }: TodoListProps) {
       </form>
 
       {sorted.length === 0 ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">
-          No prep items yet. Add your first todo!
-        </p>
+        <div className="py-6 text-center">
+          <p className="mb-3 text-sm text-muted-foreground">
+            Track what you need before you go
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {["Check passport", "Book airport transfer", "Travel insurance", "Pack bags", "Download offline maps"].map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => setNewTitle(suggestion)}
+                className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="space-y-2">
           {sorted.map((todo) => (

@@ -1,17 +1,38 @@
 import { format, parseISO } from "date-fns";
 import { EventCard } from "./event-card";
+import { Plane, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
 
 interface EventListProps {
   events: TripEvent[];
 }
 
+const eventHints = [
+  { icon: Plane, label: "Flights", color: "bg-event-flight-bg text-event-flight" },
+  { icon: Hotel, label: "Hotels", color: "bg-event-hotel-bg text-event-hotel" },
+  { icon: UtensilsCrossed, label: "Restaurants", color: "bg-event-restaurant-bg text-event-restaurant" },
+  { icon: MapPin, label: "Activities", color: "bg-event-activity-bg text-event-activity" },
+];
+
 export function EventList({ events }: EventListProps) {
   if (events.length === 0) {
     return (
-      <p className="py-12 text-center text-muted-foreground">
-        No events yet. Add your first event!
-      </p>
+      <div className="flex flex-col items-center py-16 text-center">
+        <p className="mb-1 font-display text-lg">Build your itinerary</p>
+        <p className="mb-6 max-w-xs text-sm text-muted-foreground">
+          Add events to see them organized by day. You can track:
+        </p>
+        <div className="flex gap-3">
+          {eventHints.map(({ icon: Icon, label, color }) => (
+            <div key={label} className="flex flex-col items-center gap-1.5">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
+                <Icon className="h-4.5 w-4.5" />
+              </div>
+              <span className="text-xs text-muted-foreground">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
