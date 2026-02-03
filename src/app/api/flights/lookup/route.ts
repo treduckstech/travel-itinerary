@@ -29,6 +29,50 @@ interface FlightAwareResponse {
   flights?: FlightAwareFlight[];
 }
 
+// Common IATA → ICAO airline code mapping
+const IATA_TO_ICAO: Record<string, string> = {
+  AA: "AAL", DL: "DAL", UA: "UAL", WN: "SWA", B6: "JBU",
+  AS: "ASA", NK: "NKS", F9: "FFT", HA: "HAL", SY: "SCX",
+  AC: "ACA", WS: "WJA", BA: "BAW", LH: "DLH", AF: "AFR",
+  KL: "KLM", QF: "QFA", SQ: "SIA", EK: "UAE", QR: "QTR",
+  TK: "THY", LX: "SWR", AZ: "ITY", IB: "IBE", JL: "JAL",
+  NH: "ANA", CX: "CPA", KE: "KAL", OZ: "AAR", VS: "VIR",
+  AM: "AMX", AV: "AVA", CM: "CMP", LA: "LAN", TP: "TAP",
+  SK: "SAS", AY: "FIN", OS: "AUA", SN: "BEL", EI: "EIN",
+  G4: "AAY", XP: "CXP", MX: "MXY", "5X": "UPS", FX: "FDX",
+};
+
+function parseFlightIdent(ident: string): { airline: string; number: string } | null {
+  // Match 2-letter IATA code + flight number (e.g., DL9661)
+  const iataMatch = ident.match(/^([A-Z]{2})(\d+)$/);
+  if (iataMatch) return { airline: iataMatch[1], number: iataMatch[2] };
+
+  // Match 3-letter ICAO code + flight number (e.g., DAL9661)
+  const icaoMatch = ident.match(/^([A-Z]{3})(\d+)$/);
+  if (icaoMatch) return { airline: icaoMatch[1], number: icaoMatch[2] };
+
+  return null;
+}
+
+async function fetchFlights(
+  apiKey: string,
+  ident: string
+): Promise<FlightAwareFlight[] | null> {
+  try {
+    const url = `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(ident)}?max_pages=1`;
+    const response = await fetch(url, {
+      headers: { "x-apikey": apiKey },
+    });
+
+    if (!response.ok) return null;
+
+    const data: FlightAwareResponse = await response.json();
+    return data.flights?.length ? data.flights : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const apiKey = process.env.FLIGHTAWARE_API_KEY;
   if (!apiKey) {
@@ -49,50 +93,33 @@ export async function GET(request: NextRequest) {
   const normalized = flightIata.replace(/\s+/g, "").toUpperCase();
 
   try {
-    const url = `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(normalized)}?ident_type=designator&max_pages=1`;
+    // Try the ident as provided first
+    let flights = await fetchFlights(apiKey, normalized);
 
-    const response = await fetch(url, {
-      headers: { "x-apikey": apiKey },
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "");
-      if (response.status === 404) {
-        return NextResponse.json(
-          { error: "Flight not found", debug: { status: response.status, body: errorBody } },
-          { status: 404 }
-        );
+    // If no results and ident looks like IATA format, try ICAO equivalent
+    if (!flights) {
+      const parsed = parseFlightIdent(normalized);
+      if (parsed && parsed.airline.length === 2 && IATA_TO_ICAO[parsed.airline]) {
+        const icaoIdent = IATA_TO_ICAO[parsed.airline] + parsed.number;
+        flights = await fetchFlights(apiKey, icaoIdent);
       }
-      return NextResponse.json(
-        { error: "Flight data service unavailable", debug: { status: response.status, body: errorBody } },
-        { status: 502 }
-      );
     }
 
-    const data: FlightAwareResponse = await response.json();
-
-    if (!data.flights?.length) {
+    if (!flights) {
       return NextResponse.json(
-        { error: "Flight not found", debug: { status: response.status, flightCount: 0, raw: data } },
+        { error: "Flight not found" },
         { status: 404 }
       );
     }
 
     // Pick the first non-cancelled flight
-    const flight =
-      data.flights.find((f) => !f.cancelled) ?? data.flights[0];
+    const flight = flights.find((f) => !f.cancelled) ?? flights[0];
 
     const origin = flight.origin;
     const destination = flight.destination;
 
-    // Build a readable airline name from the operator or ident
-    const airlineCode =
-      flight.operator_iata || flight.operator || "";
-    const flightNum = flight.flight_number || "";
     const displayIdent = flight.ident_iata || flight.ident || normalized;
-    const title = airlineCode && flightNum
-      ? `${displayIdent}`
-      : normalized;
+    const title = displayIdent;
 
     const depAirport = origin?.code_iata || origin?.code_icao || "";
     const arrAirport =
