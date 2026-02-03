@@ -154,51 +154,67 @@ function getDayOfWeek(dateStr: string): string {
   return jsDay === 0 ? "7" : String(jsDay);
 }
 
+async function fetchAirLabsRoutes(
+  apiKey: string,
+  normalized: string,
+  depIata: string | null
+): Promise<AirLabsRoute[]> {
+  try {
+    let url = `https://airlabs.co/api/v9/routes?flight_iata=${encodeURIComponent(normalized)}&api_key=${encodeURIComponent(apiKey)}`;
+    if (depIata) {
+      url += `&dep_iata=${encodeURIComponent(depIata)}`;
+    }
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data: AirLabsRoutesResponse = await response.json();
+    if (data.error || !data.response?.length) return [];
+    return data.response;
+  } catch {
+    return [];
+  }
+}
+
+function pickBestRoute(routes: AirLabsRoute[], flightDate: string | null): AirLabsRoute {
+  if (flightDate && routes.length > 1) {
+    const dayNum = getDayOfWeek(flightDate);
+    const match = routes.find((r) => r.days?.includes(dayNum));
+    if (match) return match;
+  }
+  return routes[0];
+}
+
+function routeToResult(route: AirLabsRoute, normalized: string): LookupResult {
+  const depAirport = route.dep_iata || route.dep_icao || "";
+  const arrAirport = route.arr_iata || route.arr_icao || "";
+  return {
+    title: route.flight_iata || normalized,
+    departure_airport: depAirport,
+    arrival_airport: arrAirport,
+    departure_time: route.dep_time_utc || route.dep_time || null,
+    arrival_time: route.arr_time_utc || route.arr_time || null,
+    duration_minutes: route.duration ?? null,
+    route: [depAirport, arrAirport].filter(Boolean).join(" → "),
+  };
+}
+
 async function lookupViaAirLabs(
   apiKey: string,
   normalized: string,
   flightDate: string | null,
   depAirportFilter: string | null
 ): Promise<LookupResult | null> {
-  try {
-    // Use /routes endpoint — returns scheduled route data (works for future flights & codeshares)
-    let url = `https://airlabs.co/api/v9/routes?flight_iata=${encodeURIComponent(normalized)}&api_key=${encodeURIComponent(apiKey)}`;
-    if (depAirportFilter) {
-      url += `&dep_iata=${encodeURIComponent(depAirportFilter)}`;
+  // Try with dep_iata filter first
+  if (depAirportFilter) {
+    const filtered = await fetchAirLabsRoutes(apiKey, normalized, depAirportFilter);
+    if (filtered.length) {
+      return routeToResult(pickBestRoute(filtered, flightDate), normalized);
     }
-    const response = await fetch(url);
-    if (!response.ok) return null;
-
-    const data: AirLabsRoutesResponse = await response.json();
-    if (data.error || !data.response?.length) return null;
-
-    let route = data.response[0];
-
-    // If a date was provided and multiple routes exist, pick the one that operates on that day
-    if (flightDate && data.response.length > 1) {
-      const dayNum = getDayOfWeek(flightDate);
-      const match = data.response.find((r) => r.days?.includes(dayNum));
-      if (match) route = match;
-    }
-
-    const depAirport = route.dep_iata || route.dep_icao || "";
-    const arrAirport = route.arr_iata || route.arr_icao || "";
-
-    const durationMinutes: number | null = route.duration ?? null;
-    const title = route.flight_iata || normalized;
-
-    return {
-      title,
-      departure_airport: depAirport,
-      arrival_airport: arrAirport,
-      departure_time: route.dep_time_utc || route.dep_time || null,
-      arrival_time: route.arr_time_utc || route.arr_time || null,
-      duration_minutes: durationMinutes,
-      route: [depAirport, arrAirport].filter(Boolean).join(" → "),
-    };
-  } catch {
-    return null;
+    // Fall back to unfiltered search
   }
+
+  const routes = await fetchAirLabsRoutes(apiKey, normalized, null);
+  if (!routes.length) return null;
+  return routeToResult(pickBestRoute(routes, flightDate), normalized);
 }
 
 // --- Main handler ---
@@ -242,6 +258,14 @@ export async function GET(request: NextRequest) {
       (debug.providers as string[]).push("airlabs");
       result = await lookupViaAirLabs(airLabsKey, normalized, flightDate, depAirport);
       debug.airlabs = result ? "found" : "not_found";
+
+      // Include available routes in debug for troubleshooting
+      if (!result) {
+        const allRoutes = await fetchAirLabsRoutes(airLabsKey, normalized, null);
+        debug.airlabs_available_routes = allRoutes.map((r) => ({
+          dep: r.dep_iata, arr: r.arr_iata, days: r.days, duration: r.duration,
+        }));
+      }
     }
 
     if (!result) {
