@@ -21,7 +21,8 @@ create table if not exists trips (
 create table if not exists events (
   id uuid default uuid_generate_v4() primary key,
   trip_id uuid references trips(id) on delete cascade not null,
-  type text not null check (type in ('flight', 'hotel', 'restaurant', 'activity')),
+  type text not null check (type in ('travel', 'hotel', 'restaurant', 'activity')),
+  sub_type text,
   title text not null,
   description text,
   start_datetime timestamptz not null,

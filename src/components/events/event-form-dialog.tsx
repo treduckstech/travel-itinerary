@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Pencil, Search, Loader2, MapPin } from "lucide-react";
-import type { TripEvent, EventType, FlightLookupResult, BenEatsRestaurant } from "@/lib/types";
+import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant } from "@/lib/types";
 import { AirportCombobox } from "@/components/events/airport-combobox";
+import { StationCombobox } from "@/components/events/station-combobox";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
 
 interface EventFormDialogProps {
@@ -36,6 +37,9 @@ interface EventFormDialogProps {
 export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<EventType>(event?.type ?? "activity");
+  const [subType, setSubType] = useState<TravelSubType>(
+    (event?.sub_type as TravelSubType) ?? "flight"
+  );
   const [title, setTitle] = useState(event?.title ?? "");
   const [startDatetime, setStartDatetime] = useState(
     event?.start_datetime
@@ -59,30 +63,61 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [manualEntry, setManualEntry] = useState(!!event);
   const [flightDate, setFlightDate] = useState("");
   const [depAirport, setDepAirport] = useState(() => {
-    if (event?.type === "flight" && event.location) {
+    if (event?.type === "travel" && event.sub_type === "flight" && event.location) {
       const parts = event.location.split("→").map((s) => s.trim());
       return parts[0] || "";
     }
     return "";
   });
   const [arrAirport, setArrAirport] = useState(() => {
-    if (event?.type === "flight" && event.location) {
+    if (event?.type === "travel" && event.sub_type === "flight" && event.location) {
       const parts = event.location.split("→").map((s) => s.trim());
       return parts[1] || "";
     }
     return "";
   });
+  const [depStation, setDepStation] = useState(() => {
+    if (event?.type === "travel" && (event.sub_type === "train" || event.sub_type === "ferry") && event.location) {
+      const parts = event.location.split("→").map((s) => s.trim());
+      return parts[0] || "";
+    }
+    return "";
+  });
+  const [arrStation, setArrStation] = useState(() => {
+    if (event?.type === "travel" && (event.sub_type === "train" || event.sub_type === "ferry") && event.location) {
+      const parts = event.location.split("→").map((s) => s.trim());
+      return parts[1] || "";
+    }
+    return "";
+  });
+  const [driveFrom, setDriveFrom] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "drive" && event.location) {
+      const parts = event.location.split("→").map((s) => s.trim());
+      return parts[0] || "";
+    }
+    return "";
+  });
+  const [driveTo, setDriveTo] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "drive" && event.location) {
+      const parts = event.location.split("→").map((s) => s.trim());
+      return parts[1] || "";
+    }
+    return "";
+  });
+  const [driveHours, setDriveHours] = useState(0);
+  const [driveMinutes, setDriveMinutes] = useState(0);
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const [description, setDescription] = useState(event?.description ?? "");
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
 
-  const isFlightLookupMode = type === "flight" && !manualEntry;
+  const isFlightLookupMode = type === "travel" && subType === "flight" && !manualEntry;
 
   function resetForm() {
     if (!isEditing) {
       setType("activity");
+      setSubType("flight");
       setTitle("");
       setStartDatetime("");
       setEndDatetime("");
@@ -92,6 +127,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setFlightDate("");
       setDepAirport("");
       setArrAirport("");
+      setDepStation("");
+      setArrStation("");
+      setDriveFrom("");
+      setDriveTo("");
+      setDriveHours(0);
+      setDriveMinutes(0);
       setFlightDuration(null);
       setDescription("");
     }
@@ -106,8 +147,23 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
   function handleDepartureChange(value: string) {
     setStartDatetime(value);
-    if (flightDuration && value) {
+    if (type === "travel" && subType === "flight" && flightDuration && value) {
       setEndDatetime(computeArrival(value, flightDuration));
+    }
+    if (type === "travel" && subType === "drive" && value) {
+      const totalMin = driveHours * 60 + driveMinutes;
+      if (totalMin > 0) {
+        setEndDatetime(computeArrival(value, totalMin));
+      }
+    }
+  }
+
+  function handleDriveTimeChange(hours: number, minutes: number) {
+    setDriveHours(hours);
+    setDriveMinutes(minutes);
+    const totalMin = hours * 60 + minutes;
+    if (totalMin > 0 && startDatetime) {
+      setEndDatetime(computeArrival(startDatetime, totalMin));
     }
   }
 
@@ -167,23 +223,35 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
   }
 
+  function getTravelLocation(): string | null {
+    if (subType === "flight") {
+      return [depAirport, arrAirport].filter(Boolean).join(" → ") || null;
+    }
+    if (subType === "train" || subType === "ferry") {
+      return [depStation, arrStation].filter(Boolean).join(" → ") || null;
+    }
+    if (subType === "drive") {
+      return [driveFrom, driveTo].filter(Boolean).join(" → ") || null;
+    }
+    return null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const flightLocation = [depAirport, arrAirport].filter(Boolean).join(" → ") || null;
-
     const eventData = {
       trip_id: tripId,
       type,
+      sub_type: type === "travel" ? subType : null,
       title,
       description: description || null,
       start_datetime: new Date(startDatetime).toISOString(),
       end_datetime: endDatetime
         ? new Date(endDatetime).toISOString()
         : null,
-      location: type === "flight" ? flightLocation : (location || null),
+      location: type === "travel" ? getTravelLocation() : (location || null),
       confirmation_number: null as string | null,
       notes: notes || null,
     };
@@ -237,11 +305,41 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   }
 
   const typeLabels: Record<EventType, string> = {
-    flight: "Flight",
+    travel: "Travel",
     hotel: "Hotel",
     restaurant: "Restaurant",
     activity: "Activity",
   };
+
+  const subTypeLabels: Record<TravelSubType, string> = {
+    flight: "Flight",
+    train: "Train",
+    ferry: "Ferry",
+    drive: "Drive",
+  };
+
+  function getTitleLabel(): string {
+    if (type === "travel") {
+      if (subType === "flight") return "Flight #";
+      if (subType === "train") return "Train / Route";
+      if (subType === "ferry") return "Ferry / Route";
+      if (subType === "drive") return "Trip Name";
+    }
+    if (type === "hotel") return "Hotel Name";
+    if (type === "restaurant") return "Restaurant";
+    return "Activity";
+  }
+
+  function getTitlePlaceholder(): string {
+    if (type === "travel") {
+      if (subType === "flight") return "UA123";
+      if (subType === "train") return "Eurostar 9014";
+      if (subType === "ferry") return "Blue Star Ferries";
+      if (subType === "drive") return "Drive to coast";
+    }
+    if (type === "hotel") return "Grand Hotel";
+    return "City Walking Tour";
+  }
 
   return (
     <Dialog
@@ -283,7 +381,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 value={type}
                 onValueChange={(v) => {
                   setType(v as EventType);
-                  if (v !== "flight") {
+                  if (v !== "travel") {
                     setManualEntry(false);
                     setFlightDuration(null);
                   }
@@ -302,42 +400,70 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               </Select>
             </div>
 
+            {type === "travel" ? (
+              <div className="space-y-2">
+                <Label>Sub-type</Label>
+                <Select
+                  value={subType}
+                  onValueChange={(v) => {
+                    setSubType(v as TravelSubType);
+                    setManualEntry(v !== "flight" ? true : !!event);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(subTypeLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="event-title">
+                  {getTitleLabel()}
+                </Label>
+                {type === "restaurant" ? (
+                  <RestaurantSearch
+                    id="event-title"
+                    value={title}
+                    onSelect={handleRestaurantSelect}
+                    onManualEntry={(name) => setTitle(name)}
+                    placeholder="Search restaurants..."
+                  />
+                ) : (
+                  <Input
+                    id="event-title"
+                    placeholder={getTitlePlaceholder()}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    maxLength={100}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {type === "travel" && (
             <div className="space-y-2">
               <Label htmlFor="event-title">
-                {type === "flight"
-                  ? "Flight #"
-                  : type === "hotel"
-                  ? "Hotel Name"
-                  : type === "restaurant"
-                  ? "Restaurant"
-                  : "Activity"}
+                {getTitleLabel()}
               </Label>
-              {type === "restaurant" ? (
-                <RestaurantSearch
-                  id="event-title"
-                  value={title}
-                  onSelect={handleRestaurantSelect}
-                  onManualEntry={(name) => setTitle(name)}
-                  placeholder="Search restaurants..."
-                />
-              ) : (
-                <Input
-                  id="event-title"
-                  placeholder={
-                    type === "flight"
-                      ? "UA123"
-                      : type === "hotel"
-                      ? "Grand Hotel"
-                      : "City Walking Tour"
-                  }
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                  maxLength={100}
-                />
-              )}
+              <Input
+                id="event-title"
+                placeholder={getTitlePlaceholder()}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                maxLength={100}
+              />
             </div>
-          </div>
+          )}
 
           {isFlightLookupMode && (
             <>
@@ -390,7 +516,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
           {!isFlightLookupMode && (
             <>
-              {type === "flight" && title.trim() && !startDatetime && (
+              {type === "travel" && subType === "flight" && title.trim() && !startDatetime && (
                 <Button
                   type="button"
                   variant="outline"
@@ -409,7 +535,11 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               <div className={type === "restaurant" ? "" : "grid grid-cols-2 gap-4"}>
                 <div className="space-y-2">
                   <Label htmlFor="event-start">
-                    {type === "flight"
+                    {type === "travel" && subType === "flight"
+                      ? "Departure"
+                      : type === "travel" && (subType === "train" || subType === "ferry")
+                      ? "Departure"
+                      : type === "travel" && subType === "drive"
                       ? "Departure"
                       : type === "hotel"
                       ? "Check-in"
@@ -421,18 +551,14 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     id="event-start"
                     type="datetime-local"
                     value={startDatetime}
-                    onChange={(e) =>
-                      type === "flight" && flightDuration
-                        ? handleDepartureChange(e.target.value)
-                        : setStartDatetime(e.target.value)
-                    }
+                    onChange={(e) => handleDepartureChange(e.target.value)}
                     required
                   />
                 </div>
                 {type !== "restaurant" && (
                   <div className="space-y-2">
                     <Label htmlFor="event-end">
-                      {type === "flight"
+                      {type === "travel"
                         ? "Arrival"
                         : type === "hotel"
                         ? "Check-out"
@@ -444,16 +570,51 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       value={endDatetime}
                       onChange={(e) => setEndDatetime(e.target.value)}
                     />
-                    {type === "flight" && flightDuration && (
+                    {type === "travel" && subType === "flight" && flightDuration && (
                       <p className="text-xs text-muted-foreground">
                         Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
+                      </p>
+                    )}
+                    {type === "travel" && subType === "drive" && (driveHours > 0 || driveMinutes > 0) && (
+                      <p className="text-xs text-muted-foreground">
+                        Auto-calculated from {driveHours}h {driveMinutes}m drive
                       </p>
                     )}
                   </div>
                 )}
               </div>
 
-              {type === "flight" ? (
+              {type === "travel" && subType === "drive" && (
+                <div className="space-y-2">
+                  <Label>Drive Time</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={48}
+                        value={driveHours}
+                        onChange={(e) => handleDriveTimeChange(parseInt(e.target.value) || 0, driveMinutes)}
+                        className="w-20"
+                      />
+                      <span className="text-sm text-muted-foreground">hours</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={driveMinutes}
+                        onChange={(e) => handleDriveTimeChange(driveHours, parseInt(e.target.value) || 0)}
+                        className="w-20"
+                      />
+                      <span className="text-sm text-muted-foreground">minutes</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {type === "travel" && subType === "flight" ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>From</Label>
@@ -472,7 +633,49 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     />
                   </div>
                 </div>
-              ) : (
+              ) : type === "travel" && (subType === "train" || subType === "ferry") ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>From</Label>
+                    <StationCombobox
+                      value={depStation}
+                      onSelect={setDepStation}
+                      placeholder="Departure"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>To</Label>
+                    <StationCombobox
+                      value={arrStation}
+                      onSelect={setArrStation}
+                      placeholder="Arrival"
+                    />
+                  </div>
+                </div>
+              ) : type === "travel" && subType === "drive" ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="drive-from">Origin</Label>
+                    <Input
+                      id="drive-from"
+                      placeholder="San Francisco"
+                      value={driveFrom}
+                      onChange={(e) => setDriveFrom(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="drive-to">Destination</Label>
+                    <Input
+                      id="drive-to"
+                      placeholder="Los Angeles"
+                      value={driveTo}
+                      onChange={(e) => setDriveTo(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+              ) : type !== "travel" ? (
                 <div className="space-y-2">
                   <Label htmlFor="event-location">Location</Label>
                   <Input
@@ -494,7 +697,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </a>
                   )}
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-2">
                 <Label htmlFor="event-notes">Notes</Label>

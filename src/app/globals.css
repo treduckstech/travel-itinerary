@@ -49,8 +49,8 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   /* Event type colors */
-  --color-event-flight: var(--event-flight);
-  --color-event-flight-bg: var(--event-flight-bg);
+  --color-event-travel: var(--event-travel);
+  --color-event-travel-bg: var(--event-travel-bg);
   --color-event-hotel: var(--event-hotel);
   --color-event-hotel-bg: var(--event-hotel-bg);
   --color-event-restaurant: var(--event-restaurant);
@@ -98,8 +98,8 @@
   --sidebar-ring: oklch(0.48 0.16 195);
 
   /* Event type semantic colors — boosted saturation */
-  --event-flight: oklch(0.50 0.18 250);
-  --event-flight-bg: oklch(0.94 0.04 250);
+  --event-travel: oklch(0.50 0.18 250);
+  --event-travel-bg: oklch(0.94 0.04 250);
   --event-hotel: oklch(0.46 0.20 300);
   --event-hotel-bg: oklch(0.94 0.05 300);
   --event-restaurant: oklch(0.55 0.22 50);
@@ -144,8 +144,8 @@
   --sidebar-ring: oklch(0.62 0.16 195);
 
   /* Event type semantic colors (dark mode) — boosted */
-  --event-flight: oklch(0.68 0.14 250);
-  --event-flight-bg: oklch(0.24 0.05 250);
+  --event-travel: oklch(0.68 0.14 250);
+  --event-travel-bg: oklch(0.24 0.05 250);
   --event-hotel: oklch(0.66 0.16 300);
   --event-hotel-bg: oklch(0.24 0.05 300);
   --event-restaurant: oklch(0.70 0.16 50);

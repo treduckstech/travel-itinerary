@@ -23,6 +23,9 @@ import {
   MapPin,
   Clock,
   Trash2,
+  TrainFront,
+  Ship,
+  Car,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 
@@ -30,10 +33,17 @@ const typeConfig: Record<
   EventType,
   { icon: React.ElementType; border: string; iconBg: string }
 > = {
-  flight: { icon: Plane, border: "border-l-event-flight", iconBg: "bg-event-flight-bg text-event-flight" },
+  travel: { icon: Plane, border: "border-l-event-travel", iconBg: "bg-event-travel-bg text-event-travel" },
   hotel: { icon: Hotel, border: "border-l-event-hotel", iconBg: "bg-event-hotel-bg text-event-hotel" },
   restaurant: { icon: UtensilsCrossed, border: "border-l-event-restaurant", iconBg: "bg-event-restaurant-bg text-event-restaurant" },
   activity: { icon: MapPin, border: "border-l-event-activity", iconBg: "bg-event-activity-bg text-event-activity" },
+};
+
+const subTypeIcons: Record<string, React.ElementType> = {
+  flight: Plane,
+  train: TrainFront,
+  ferry: Ship,
+  drive: Car,
 };
 
 export function EventCard({ event }: { event: TripEvent }) {
@@ -42,7 +52,9 @@ export function EventCard({ event }: { event: TripEvent }) {
   const router = useRouter();
   const supabase = createClient();
   const config = typeConfig[event.type];
-  const Icon = config.icon;
+  const Icon = (event.type === "travel" && event.sub_type && subTypeIcons[event.sub_type])
+    ? subTypeIcons[event.sub_type]
+    : config.icon;
 
   async function handleDelete() {
     setDeleteLoading(true);

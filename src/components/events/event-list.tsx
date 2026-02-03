@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 import { EventCard } from "./event-card";
-import { Plane, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
+import { Route, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
 
 interface EventListProps {
@@ -8,7 +8,7 @@ interface EventListProps {
 }
 
 const eventHints = [
-  { icon: Plane, label: "Flights", color: "bg-event-flight-bg text-event-flight" },
+  { icon: Route, label: "Travel", color: "bg-event-travel-bg text-event-travel" },
   { icon: Hotel, label: "Hotels", color: "bg-event-hotel-bg text-event-hotel" },
   { icon: UtensilsCrossed, label: "Restaurants", color: "bg-event-restaurant-bg text-event-restaurant" },
   { icon: MapPin, label: "Activities", color: "bg-event-activity-bg text-event-activity" },

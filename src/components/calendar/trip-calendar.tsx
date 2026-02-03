@@ -12,18 +12,28 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  TrainFront,
+  Ship,
+  Car,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 
 const typeIcons: Record<EventType, React.ElementType> = {
-  flight: Plane,
+  travel: Plane,
   hotel: Hotel,
   restaurant: UtensilsCrossed,
   activity: MapPin,
 };
 
+const subTypeIcons: Record<string, React.ElementType> = {
+  flight: Plane,
+  train: TrainFront,
+  ferry: Ship,
+  drive: Car,
+};
+
 const typeColors: Record<EventType, string> = {
-  flight: "bg-event-flight-bg text-event-flight",
+  travel: "bg-event-travel-bg text-event-travel",
   hotel: "bg-event-hotel-bg text-event-hotel",
   restaurant: "bg-event-restaurant-bg text-event-restaurant",
   activity: "bg-event-activity-bg text-event-activity",
@@ -137,7 +147,9 @@ export function TripCalendar({
                   </h3>
                   <div className="space-y-2">
                     {group.events.map((event) => {
-                      const Icon = typeIcons[event.type];
+                      const Icon = (event.type === "travel" && event.sub_type && subTypeIcons[event.sub_type])
+                        ? subTypeIcons[event.sub_type]
+                        : typeIcons[event.type];
                       return (
                         <div
                           key={event.id}

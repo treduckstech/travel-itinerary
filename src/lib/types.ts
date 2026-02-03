@@ -1,4 +1,6 @@
-export type EventType = "flight" | "hotel" | "restaurant" | "activity";
+export type EventType = "travel" | "hotel" | "restaurant" | "activity";
+
+export type TravelSubType = "flight" | "train" | "ferry" | "drive";
 
 export interface Trip {
   id: string;
@@ -13,6 +15,7 @@ export interface TripEvent {
   id: string;
   trip_id: string;
   type: EventType;
+  sub_type: TravelSubType | null;
   title: string;
   description: string | null;
   start_datetime: string;
