@@ -208,21 +208,27 @@ export async function GET(request: NextRequest) {
 
   const normalized = flightIata.replace(/\s+/g, "").toUpperCase();
 
+  const debug: Record<string, unknown> = { normalized, providers: [] as string[] };
+
   try {
     // Try FlightAware first (better data), fall back to AirLabs (better codeshare support)
     let result: LookupResult | null = null;
 
     if (flightAwareKey) {
+      (debug.providers as string[]).push("flightaware");
       result = await lookupViaFlightAware(flightAwareKey, normalized);
+      debug.flightaware = result ? "found" : "not_found";
     }
 
     if (!result && airLabsKey) {
+      (debug.providers as string[]).push("airlabs");
       result = await lookupViaAirLabs(airLabsKey, normalized);
+      debug.airlabs = result ? "found" : "not_found";
     }
 
     if (!result) {
       return NextResponse.json(
-        { error: "Flight not found" },
+        { error: "Flight not found", debug },
         { status: 404 }
       );
     }
@@ -230,7 +236,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(
-      { error: "Failed to connect to flight data service" },
+      { error: "Failed to connect to flight data service", debug },
       { status: 502 }
     );
   }
