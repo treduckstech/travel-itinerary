@@ -1,42 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 
-interface AviationStackResponse {
-  error?: unknown;
-  data?: Array<{
-    departure?: { iata?: string; scheduled?: string };
-    arrival?: { iata?: string; scheduled?: string };
-    airline?: { name?: string };
-  }>;
+interface FlightAwareAirport {
+  code_iata?: string;
+  code_icao?: string;
+  name?: string;
+  city?: string;
 }
 
-async function fetchFlights(
-  apiKey: string,
-  flightIata: string,
-  flightDate?: string | null
-): Promise<AviationStackResponse | null> {
-  try {
-    const url = new URL("http://api.aviationstack.com/v1/flights");
-    url.searchParams.set("access_key", apiKey);
-    url.searchParams.set("flight_iata", flightIata);
-    if (flightDate) {
-      url.searchParams.set("flight_date", flightDate);
-    }
-    url.searchParams.set("limit", "5");
+interface FlightAwareFlight {
+  ident?: string;
+  ident_iata?: string;
+  operator?: string;
+  operator_iata?: string;
+  flight_number?: string;
+  origin?: FlightAwareAirport;
+  destination?: FlightAwareAirport;
+  scheduled_out?: string;
+  scheduled_in?: string;
+  estimated_out?: string;
+  estimated_in?: string;
+  actual_out?: string;
+  actual_in?: string;
+  status?: string;
+  cancelled?: boolean;
+}
 
-    const response = await fetch(url.toString());
-    if (!response.ok) return null;
-
-    const data: AviationStackResponse = await response.json();
-    if (data.error) return null;
-
-    return data;
-  } catch {
-    return null;
-  }
+interface FlightAwareResponse {
+  flights?: FlightAwareFlight[];
 }
 
 export async function GET(request: NextRequest) {
-  const apiKey = process.env.AVIATIONSTACK_API_KEY;
+  const apiKey = process.env.FLIGHTAWARE_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "Flight lookup is not configured" },
@@ -53,41 +47,68 @@ export async function GET(request: NextRequest) {
   }
 
   const normalized = flightIata.replace(/\s+/g, "").toUpperCase();
-  const flightDate = request.nextUrl.searchParams.get("flight_date");
 
   try {
-    // Try with flight_date first, fall back to without it (free tier may not support it)
-    let data = flightDate
-      ? await fetchFlights(apiKey, normalized, flightDate)
-      : null;
+    const url = `https://aeroapi.flightaware.com/aeroapi/flights/${encodeURIComponent(normalized)}?ident_type=designator&max_pages=1`;
 
-    if (!data || !data.data?.length) {
-      data = await fetchFlights(apiKey, normalized);
+    const response = await fetch(url, {
+      headers: { "x-apikey": apiKey },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json(
+          { error: "Flight not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Flight data service unavailable" },
+        { status: 502 }
+      );
     }
 
-    if (!data || !data.data?.length) {
+    const data: FlightAwareResponse = await response.json();
+
+    if (!data.flights?.length) {
       return NextResponse.json(
         { error: "Flight not found" },
         { status: 404 }
       );
     }
 
-    const flight = data.data[0];
-    const departure = flight.departure;
-    const arrival = flight.arrival;
-    const airline = flight.airline?.name ?? "";
+    // Pick the first non-cancelled flight
+    const flight =
+      data.flights.find((f) => !f.cancelled) ?? data.flights[0];
 
-    const title = airline
-      ? `${airline} ${normalized}`
+    const origin = flight.origin;
+    const destination = flight.destination;
+
+    // Build a readable airline name from the operator or ident
+    const airlineCode =
+      flight.operator_iata || flight.operator || "";
+    const flightNum = flight.flight_number || "";
+    const displayIdent = flight.ident_iata || flight.ident || normalized;
+    const title = airlineCode && flightNum
+      ? `${displayIdent}`
       : normalized;
+
+    const depAirport = origin?.code_iata || origin?.code_icao || "";
+    const arrAirport =
+      destination?.code_iata || destination?.code_icao || "";
+
+    const departureTime =
+      flight.scheduled_out || flight.estimated_out || flight.actual_out || null;
+    const arrivalTime =
+      flight.scheduled_in || flight.estimated_in || flight.actual_in || null;
 
     return NextResponse.json({
       title,
-      departure_airport: departure?.iata ?? "",
-      arrival_airport: arrival?.iata ?? "",
-      departure_time: departure?.scheduled ?? null,
-      arrival_time: arrival?.scheduled ?? null,
-      route: [departure?.iata, arrival?.iata].filter(Boolean).join(" → "),
+      departure_airport: depAirport,
+      arrival_airport: arrAirport,
+      departure_time: departureTime,
+      arrival_time: arrivalTime,
+      route: [depAirport, arrAirport].filter(Boolean).join(" → "),
     });
   } catch {
     return NextResponse.json(
