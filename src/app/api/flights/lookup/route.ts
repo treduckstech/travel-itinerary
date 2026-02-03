@@ -40,9 +40,9 @@ interface FlightAwareResponse {
   flights?: FlightAwareFlight[];
 }
 
-// --- AirLabs types ---
+// --- AirLabs types (routes endpoint) ---
 
-interface AirLabsFlight {
+interface AirLabsRoute {
   flight_iata?: string;
   flight_icao?: string;
   airline_iata?: string;
@@ -56,11 +56,11 @@ interface AirLabsFlight {
   arr_time?: string;
   arr_time_utc?: string;
   duration?: number;
-  status?: string;
+  cs_flight_iata?: string;
 }
 
-interface AirLabsResponse {
-  response?: AirLabsFlight;
+interface AirLabsRoutesResponse {
+  response?: AirLabsRoute[];
   error?: { message?: string };
 }
 
@@ -151,32 +151,27 @@ async function lookupViaAirLabs(
   normalized: string
 ): Promise<LookupResult | null> {
   try {
-    const url = `https://airlabs.co/api/v9/flight?flight_iata=${encodeURIComponent(normalized)}&api_key=${encodeURIComponent(apiKey)}`;
+    // Use /routes endpoint — returns scheduled route data (works for future flights & codeshares)
+    const url = `https://airlabs.co/api/v9/routes?flight_iata=${encodeURIComponent(normalized)}&api_key=${encodeURIComponent(apiKey)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
 
-    const data: AirLabsResponse = await response.json();
-    if (data.error || !data.response) return null;
+    const data: AirLabsRoutesResponse = await response.json();
+    if (data.error || !data.response?.length) return null;
 
-    const flight = data.response;
-    const depAirport = flight.dep_iata || flight.dep_icao || "";
-    const arrAirport = flight.arr_iata || flight.arr_icao || "";
-    const departureTime = flight.dep_time_utc || flight.dep_time || null;
-    const arrivalTime = flight.arr_time_utc || flight.arr_time || null;
+    const route = data.response[0];
+    const depAirport = route.dep_iata || route.dep_icao || "";
+    const arrAirport = route.arr_iata || route.arr_icao || "";
 
-    let durationMinutes: number | null = flight.duration ?? null;
-    if (!durationMinutes && departureTime && arrivalTime) {
-      durationMinutes = computeDuration(departureTime, arrivalTime);
-    }
-
-    const title = flight.flight_iata || normalized;
+    const durationMinutes: number | null = route.duration ?? null;
+    const title = route.flight_iata || normalized;
 
     return {
       title,
       departure_airport: depAirport,
       arrival_airport: arrAirport,
-      departure_time: departureTime,
-      arrival_time: arrivalTime,
+      departure_time: route.dep_time_utc || route.dep_time || null,
+      arrival_time: route.arr_time_utc || route.arr_time || null,
       duration_minutes: durationMinutes,
       route: [depAirport, arrAirport].filter(Boolean).join(" → "),
     };
