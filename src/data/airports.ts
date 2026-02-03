@@ -105,6 +105,13 @@ export const airports: Airport[] = [
   { iata: "MXP", name: "Milan Malpensa", city: "Milan", country: "Italy" },
   { iata: "VCE", name: "Marco Polo", city: "Venice", country: "Italy" },
   { iata: "NAP", name: "Naples International", city: "Naples", country: "Italy" },
+  { iata: "FLR", name: "Amerigo Vespucci", city: "Florence", country: "Italy" },
+  { iata: "BGY", name: "Milan Bergamo", city: "Bergamo", country: "Italy" },
+  { iata: "BLQ", name: "Guglielmo Marconi", city: "Bologna", country: "Italy" },
+  { iata: "PSA", name: "Galileo Galilei", city: "Pisa", country: "Italy" },
+  { iata: "CTA", name: "Catania-Fontanarossa", city: "Catania", country: "Italy" },
+  { iata: "PMO", name: "Falcone-Borsellino", city: "Palermo", country: "Italy" },
+  { iata: "TRN", name: "Turin Caselle", city: "Turin", country: "Italy" },
   { iata: "ATH", name: "Eleftherios Venizelos", city: "Athens", country: "Greece" },
 
   // Northern & Eastern Europe
