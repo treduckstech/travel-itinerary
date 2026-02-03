@@ -56,14 +56,15 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
       if (response.status === 404) {
         return NextResponse.json(
-          { error: "Flight not found" },
+          { error: "Flight not found", debug: { status: response.status, body: errorBody } },
           { status: 404 }
         );
       }
       return NextResponse.json(
-        { error: "Flight data service unavailable" },
+        { error: "Flight data service unavailable", debug: { status: response.status, body: errorBody } },
         { status: 502 }
       );
     }
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     if (!data.flights?.length) {
       return NextResponse.json(
-        { error: "Flight not found" },
+        { error: "Flight not found", debug: { status: response.status, flightCount: 0, raw: data } },
         { status: 404 }
       );
     }
