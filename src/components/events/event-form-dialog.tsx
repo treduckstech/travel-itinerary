@@ -222,7 +222,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-display text-xl">
             {isEditing ? "Edit Event" : "Add Event"}
           </DialogTitle>
         </DialogHeader>

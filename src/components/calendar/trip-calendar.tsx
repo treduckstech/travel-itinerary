@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { format, parseISO, isSameDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plane,
@@ -83,7 +82,7 @@ export function TripCalendar({
         <CardContent>
           {selectedEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No events on this date.
+              Nothing planned for this day
             </p>
           ) : (
             <div className="space-y-3">
@@ -92,31 +91,29 @@ export function TripCalendar({
                 return (
                   <div
                     key={event.id}
-                    className="flex items-start gap-3 rounded-md border p-3"
+                    className="flex items-start gap-3 rounded-lg border p-3"
                   >
-                    <Badge
-                      variant="secondary"
-                      className={typeColors[event.type]}
-                    >
-                      <Icon className="h-3 w-3" />
-                    </Badge>
-                    <div className="flex-1 space-y-1">
-                      <p className="font-medium leading-none">
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${typeColors[event.type]}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="truncate font-medium leading-none">
                         {event.title}
                       </p>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
+                        <Clock className="h-3 w-3 shrink-0" />
                         {format(parseISO(event.start_datetime), "h:mm a")}
                         {event.end_datetime &&
-                          ` - ${format(
+                          ` – ${format(
                             parseISO(event.end_datetime),
                             "h:mm a"
                           )}`}
                       </div>
                       {event.location && (
-                        <p className="text-xs text-muted-foreground">
-                          {event.location}
-                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{event.location}</span>
+                        </div>
                       )}
                     </div>
                   </div>

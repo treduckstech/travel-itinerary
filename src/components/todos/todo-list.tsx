@@ -95,11 +95,11 @@ export function TodoList({ tripId, todos }: TodoListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      {todos.length > 0 && (
         <p className="text-sm text-muted-foreground">
           {completedCount} of {todos.length} completed
         </p>
-      </div>
+      )}
 
       <form onSubmit={handleAdd} className="flex gap-2">
         <Input
@@ -136,7 +136,7 @@ export function TodoList({ tripId, todos }: TodoListProps) {
           {sorted.map((todo) => (
             <div
               key={todo.id}
-              className="flex items-center gap-3 rounded-md border p-3"
+              className="group flex items-center gap-3 rounded-lg border p-3"
             >
               <Checkbox
                 checked={todo.completed}
@@ -157,6 +157,7 @@ export function TodoList({ tripId, todos }: TodoListProps) {
                 size="sm"
                 onClick={() => handleDelete(todo.id)}
                 disabled={busyIds.has(todo.id)}
+                className="opacity-0 transition-opacity group-hover:opacity-100"
               >
                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>

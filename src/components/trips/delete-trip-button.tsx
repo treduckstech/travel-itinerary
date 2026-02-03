@@ -55,7 +55,7 @@ export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0 }: Dele
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Trip</DialogTitle>
+          <DialogTitle className="font-display text-xl">Delete Trip</DialogTitle>
           <DialogDescription>
             This will permanently delete this trip
             {details.length > 0

@@ -64,9 +64,9 @@
   /* Richer ocean teal primary */
   --background: oklch(0.985 0.005 65);
   --foreground: oklch(0.18 0.02 250);
-  --card: oklch(1 0 0);
+  --card: oklch(0.998 0.002 65);
   --card-foreground: oklch(0.18 0.02 250);
-  --popover: oklch(1 0 0);
+  --popover: oklch(0.998 0.002 65);
   --popover-foreground: oklch(0.18 0.02 250);
   --primary: oklch(0.48 0.16 195);
   --primary-foreground: oklch(0.995 0 0);
