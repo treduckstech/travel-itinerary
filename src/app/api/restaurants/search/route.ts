@@ -39,8 +39,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
+      const text = await response.text().catch(() => "");
       return NextResponse.json(
-        { error: "Restaurant search failed" },
+        { error: "Restaurant search failed", upstream_status: response.status, upstream_body: text },
         { status: 502 }
       );
     }
