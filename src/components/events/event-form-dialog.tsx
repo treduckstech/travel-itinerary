@@ -293,6 +293,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
+                maxLength={100}
               />
             </div>
           </div>
@@ -433,6 +434,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       }
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
+                      maxLength={200}
                     />
                   </div>
 
@@ -443,6 +445,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       placeholder="ABC123"
                       value={confirmationNumber}
                       onChange={(e) => setConfirmationNumber(e.target.value)}
+                      maxLength={50}
                     />
                   </div>
 
@@ -454,6 +457,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={2}
+                      maxLength={500}
                     />
                   </div>
 
@@ -465,6 +469,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={2}
+                      maxLength={500}
                     />
                   </div>
                 </div>

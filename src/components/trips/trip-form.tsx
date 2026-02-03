@@ -101,6 +101,7 @@ export function TripForm({ trip }: TripFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              maxLength={100}
             />
           </div>
           <div className="space-y-2">
@@ -111,6 +112,7 @@ export function TripForm({ trip }: TripFormProps) {
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               required
+              maxLength={100}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">

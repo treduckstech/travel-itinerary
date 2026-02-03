@@ -30,7 +30,12 @@ export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0 }: Dele
 
   async function handleDelete() {
     setLoading(true);
-    await supabase.from("trips").delete().eq("id", tripId);
+    const { error } = await supabase.from("trips").delete().eq("id", tripId);
+    if (error) {
+      toast.error("Failed to delete trip");
+      setLoading(false);
+      return;
+    }
     toast.success("Trip deleted");
     router.push("/");
     router.refresh();

@@ -49,7 +49,12 @@ export function EventCard({ event }: { event: TripEvent }) {
 
   async function handleDelete() {
     setDeleteLoading(true);
-    await supabase.from("events").delete().eq("id", event.id);
+    const { error } = await supabase.from("events").delete().eq("id", event.id);
+    setDeleteLoading(false);
+    if (error) {
+      toast.error("Failed to delete event");
+      return;
+    }
     setDeleteOpen(false);
     toast.success("Event deleted");
     router.refresh();
@@ -58,12 +63,12 @@ export function EventCard({ event }: { event: TripEvent }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className={config.color}>
+        <div className="flex min-w-0 items-center gap-2">
+          <Badge variant="secondary" className={`shrink-0 ${config.color}`}>
             <Icon className="mr-1 h-3 w-3" />
             {event.type}
           </Badge>
-          <span className="font-semibold">{event.title}</span>
+          <span className="truncate font-semibold">{event.title}</span>
         </div>
         <div className="flex items-center gap-1">
           <EventFormDialog tripId={event.trip_id} event={event} />

@@ -48,9 +48,9 @@ export function TripCard({ trip, featured = false }: TripCardProps) {
         featured ? "border-primary/20 shadow-sm" : ""
       } ${status === "active" ? "border-event-activity/30" : ""}`}>
         <CardHeader className="pb-2">
-          <div className="flex items-start justify-between">
-            <CardTitle className={featured ? "text-xl" : "text-lg"}>{trip.name}</CardTitle>
-            <div className="flex items-center gap-2">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className={`truncate ${featured ? "text-xl" : "text-lg"}`}>{trip.name}</CardTitle>
+            <div className="flex shrink-0 items-center gap-2">
               {countdown && (
                 <span className={`text-xs font-medium ${
                   status === "active" ? "text-event-activity" : "text-primary"
@@ -76,7 +76,7 @@ export function TripCard({ trip, featured = false }: TripCardProps) {
         <CardContent className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 shrink-0" />
-            {trip.destination}
+            <span className="truncate">{trip.destination}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 shrink-0" />
