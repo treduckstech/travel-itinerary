@@ -157,11 +157,15 @@ function getDayOfWeek(dateStr: string): string {
 async function lookupViaAirLabs(
   apiKey: string,
   normalized: string,
-  flightDate: string | null
+  flightDate: string | null,
+  depAirportFilter: string | null
 ): Promise<LookupResult | null> {
   try {
     // Use /routes endpoint — returns scheduled route data (works for future flights & codeshares)
-    const url = `https://airlabs.co/api/v9/routes?flight_iata=${encodeURIComponent(normalized)}&api_key=${encodeURIComponent(apiKey)}`;
+    let url = `https://airlabs.co/api/v9/routes?flight_iata=${encodeURIComponent(normalized)}&api_key=${encodeURIComponent(apiKey)}`;
+    if (depAirportFilter) {
+      url += `&dep_iata=${encodeURIComponent(depAirportFilter)}`;
+    }
     const response = await fetch(url);
     if (!response.ok) return null;
 
@@ -220,8 +224,9 @@ export async function GET(request: NextRequest) {
 
   const normalized = flightIata.replace(/\s+/g, "").toUpperCase();
   const flightDate = request.nextUrl.searchParams.get("flight_date"); // optional YYYY-MM-DD
+  const depAirport = request.nextUrl.searchParams.get("dep_iata")?.toUpperCase() || null; // optional, e.g. "ATL"
 
-  const debug: Record<string, unknown> = { normalized, flightDate, providers: [] as string[] };
+  const debug: Record<string, unknown> = { normalized, flightDate, depAirport, providers: [] as string[] };
 
   try {
     // Try FlightAware first (better data), fall back to AirLabs (better codeshare support)
@@ -235,7 +240,7 @@ export async function GET(request: NextRequest) {
 
     if (!result && airLabsKey) {
       (debug.providers as string[]).push("airlabs");
-      result = await lookupViaAirLabs(airLabsKey, normalized, flightDate);
+      result = await lookupViaAirLabs(airLabsKey, normalized, flightDate, depAirport);
       debug.airlabs = result ? "found" : "not_found";
     }
 

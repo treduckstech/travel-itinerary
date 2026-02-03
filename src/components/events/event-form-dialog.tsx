@@ -59,6 +59,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   );
   const [manualEntry, setManualEntry] = useState(!!event);
   const [flightDate, setFlightDate] = useState("");
+  const [depAirport, setDepAirport] = useState("");
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -79,6 +80,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setShowDetails(false);
       setManualEntry(false);
       setFlightDate("");
+      setDepAirport("");
       setFlightDuration(null);
     }
     setError(null);
@@ -106,6 +108,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       let url = `/api/flights/lookup?flight_iata=${encodeURIComponent(title.trim())}`;
       if (flightDate) {
         url += `&flight_date=${encodeURIComponent(flightDate)}`;
+      }
+      if (depAirport.trim()) {
+        url += `&dep_iata=${encodeURIComponent(depAirport.trim())}`;
       }
       const res = await fetch(url);
       const data = await res.json();
@@ -292,17 +297,29 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           </div>
 
-          {/* Flight lookup mode: flight # + date + lookup button */}
+          {/* Flight lookup mode: flight # + departure info + lookup button */}
           {isFlightLookupMode && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="flight-date">Departure Date</Label>
-                <Input
-                  id="flight-date"
-                  type="date"
-                  value={flightDate}
-                  onChange={(e) => setFlightDate(e.target.value)}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dep-airport">Departure Airport</Label>
+                  <Input
+                    id="dep-airport"
+                    placeholder="ATL"
+                    value={depAirport}
+                    onChange={(e) => setDepAirport(e.target.value.toUpperCase())}
+                    maxLength={4}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="flight-date">Departure Date</Label>
+                  <Input
+                    id="flight-date"
+                    type="date"
+                    value={flightDate}
+                    onChange={(e) => setFlightDate(e.target.value)}
+                  />
+                </div>
               </div>
 
               <Button
