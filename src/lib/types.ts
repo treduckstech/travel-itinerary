@@ -50,6 +50,12 @@ export interface BenEatsRestaurant {
   google_place_id: string | null;
 }
 
+export interface PlaceResult {
+  id: string;
+  name: string;
+  address: string;
+}
+
 export interface Todo {
   id: string;
   trip_id: string;

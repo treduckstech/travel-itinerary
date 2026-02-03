@@ -30,3 +30,4 @@
 - `FLIGHTAWARE_API_KEY` - FlightAware AeroAPI key for flight lookup (optional, server-side only)
 - `AIRLABS_API_KEY` - AirLabs API key for flight lookup fallback (optional, server-side only)
 - `BENEATS_API_KEY` - BenEats API key for restaurant search (optional, server-side only)
+- `GOOGLE_MAPS_API_KEY` - Google Maps API key for place search and drive time calculation (optional, server-side only; requires Places API (New) and Distance Matrix API)

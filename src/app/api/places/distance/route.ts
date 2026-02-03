@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Distance calculation is not configured" },
+      { status: 503 }
+    );
+  }
+
+  const origin = request.nextUrl.searchParams.get("origin");
+  const destination = request.nextUrl.searchParams.get("destination");
+
+  if (!origin?.trim() || !destination?.trim()) {
+    return NextResponse.json(
+      { error: "Missing origin or destination parameter" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
+    url.searchParams.set("origins", origin.trim());
+    url.searchParams.set("destinations", destination.trim());
+    url.searchParams.set("key", apiKey);
+
+    const response = await fetch(url.toString());
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "Distance calculation failed" },
+        { status: 502 }
+      );
+    }
+
+    const body = await response.json();
+    const element = body.rows?.[0]?.elements?.[0];
+
+    if (!element || element.status !== "OK") {
+      return NextResponse.json(
+        { error: "Could not calculate distance between these locations" },
+        { status: 422 }
+      );
+    }
+
+    return NextResponse.json({
+      duration_minutes: Math.round(element.duration.value / 60),
+      distance_text: element.distance.text,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to connect to distance service" },
+      { status: 502 }
+    );
+  }
+}

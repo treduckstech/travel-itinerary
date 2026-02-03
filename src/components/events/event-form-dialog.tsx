@@ -24,10 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Pencil, Search, Loader2, MapPin } from "lucide-react";
-import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant } from "@/lib/types";
+import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant, PlaceResult } from "@/lib/types";
 import { AirportCombobox } from "@/components/events/airport-combobox";
 import { StationCombobox } from "@/components/events/station-combobox";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
+import { PlaceSearch } from "@/components/events/place-search";
 
 interface EventFormDialogProps {
   tripId: string;
@@ -104,8 +105,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     return "";
   });
-  const [driveHours, setDriveHours] = useState(0);
-  const [driveMinutes, setDriveMinutes] = useState(0);
+  const [driveDuration, setDriveDuration] = useState<number | null>(null);
+  const [driveLoading, setDriveLoading] = useState(false);
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const [description, setDescription] = useState(event?.description ?? "");
   const router = useRouter();
@@ -131,8 +132,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setArrStation("");
       setDriveFrom("");
       setDriveTo("");
-      setDriveHours(0);
-      setDriveMinutes(0);
+      setDriveDuration(null);
+      setDriveLoading(false);
       setFlightDuration(null);
       setDescription("");
     }
@@ -150,20 +151,32 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     if (type === "travel" && subType === "flight" && flightDuration && value) {
       setEndDatetime(computeArrival(value, flightDuration));
     }
-    if (type === "travel" && subType === "drive" && value) {
-      const totalMin = driveHours * 60 + driveMinutes;
-      if (totalMin > 0) {
-        setEndDatetime(computeArrival(value, totalMin));
-      }
+    if (type === "travel" && subType === "drive" && value && driveDuration) {
+      setEndDatetime(computeArrival(value, driveDuration));
     }
   }
 
-  function handleDriveTimeChange(hours: number, minutes: number) {
-    setDriveHours(hours);
-    setDriveMinutes(minutes);
-    const totalMin = hours * 60 + minutes;
-    if (totalMin > 0 && startDatetime) {
-      setEndDatetime(computeArrival(startDatetime, totalMin));
+  async function fetchDriveTime(origin: string, destination: string) {
+    if (!origin.trim() || !destination.trim()) return;
+    setDriveLoading(true);
+    try {
+      const res = await fetch(
+        `/api/places/distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`
+      );
+      if (!res.ok) {
+        setDriveDuration(null);
+        return;
+      }
+      const data = await res.json();
+      const minutes = data.duration_minutes as number;
+      setDriveDuration(minutes);
+      if (startDatetime && minutes > 0) {
+        setEndDatetime(computeArrival(startDatetime, minutes));
+      }
+    } catch {
+      setDriveDuration(null);
+    } finally {
+      setDriveLoading(false);
     }
   }
 
@@ -241,11 +254,16 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     setLoading(true);
     setError(null);
 
+    const finalTitle =
+      type === "travel" && subType === "drive" && driveFrom && driveTo
+        ? `${driveFrom} → ${driveTo}`
+        : title;
+
     const eventData = {
       trip_id: tripId,
       type,
       sub_type: type === "travel" ? subType : null,
-      title,
+      title: finalTitle,
       description: description || null,
       start_datetime: new Date(startDatetime).toISOString(),
       end_datetime: endDatetime
@@ -449,7 +467,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             )}
           </div>
 
-          {type === "travel" && (
+          {type === "travel" && subType !== "drive" && (
             <div className="space-y-2">
               <Label htmlFor="event-title">
                 {getTitleLabel()}
@@ -575,9 +593,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                         Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
                       </p>
                     )}
-                    {type === "travel" && subType === "drive" && (driveHours > 0 || driveMinutes > 0) && (
+                    {type === "travel" && subType === "drive" && driveDuration != null && (
                       <p className="text-xs text-muted-foreground">
-                        Auto-calculated from {driveHours}h {driveMinutes}m drive
+                        Auto-calculated from {Math.floor(driveDuration / 60)}h {driveDuration % 60}m drive
                       </p>
                     )}
                   </div>
@@ -586,31 +604,17 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
               {type === "travel" && subType === "drive" && (
                 <div className="space-y-2">
-                  <Label>Drive Time</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={48}
-                        value={driveHours}
-                        onChange={(e) => handleDriveTimeChange(parseInt(e.target.value) || 0, driveMinutes)}
-                        className="w-20"
-                      />
-                      <span className="text-sm text-muted-foreground">hours</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={59}
-                        value={driveMinutes}
-                        onChange={(e) => handleDriveTimeChange(driveHours, parseInt(e.target.value) || 0)}
-                        className="w-20"
-                      />
-                      <span className="text-sm text-muted-foreground">minutes</span>
-                    </div>
-                  </div>
+                  {driveLoading && (
+                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Calculating drive time...
+                    </p>
+                  )}
+                  {!driveLoading && driveDuration != null && (
+                    <p className="text-xs text-muted-foreground">
+                      Drive time: {Math.floor(driveDuration / 60)}h {driveDuration % 60}m
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -655,23 +659,35 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               ) : type === "travel" && subType === "drive" ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="drive-from">Origin</Label>
-                    <Input
+                    <Label>Origin</Label>
+                    <PlaceSearch
                       id="drive-from"
-                      placeholder="San Francisco"
                       value={driveFrom}
-                      onChange={(e) => setDriveFrom(e.target.value)}
-                      maxLength={100}
+                      onSelect={(place: PlaceResult) => {
+                        setDriveFrom(place.name);
+                        if (driveTo) fetchDriveTime(place.name, driveTo);
+                      }}
+                      onManualEntry={(name: string) => {
+                        setDriveFrom(name);
+                        if (driveTo) fetchDriveTime(name, driveTo);
+                      }}
+                      placeholder="Search origin..."
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="drive-to">Destination</Label>
-                    <Input
+                    <Label>Destination</Label>
+                    <PlaceSearch
                       id="drive-to"
-                      placeholder="Los Angeles"
                       value={driveTo}
-                      onChange={(e) => setDriveTo(e.target.value)}
-                      maxLength={100}
+                      onSelect={(place: PlaceResult) => {
+                        setDriveTo(place.name);
+                        if (driveFrom) fetchDriveTime(driveFrom, place.name);
+                      }}
+                      onManualEntry={(name: string) => {
+                        setDriveTo(name);
+                        if (driveFrom) fetchDriveTime(driveFrom, name);
+                      }}
+                      placeholder="Search destination..."
                     />
                   </div>
                 </div>

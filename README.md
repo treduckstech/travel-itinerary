@@ -81,7 +81,48 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 This creates three tables (`trips`, `events`, `todos`) with indexes for query performance.
 
-### 5. Start the dev server
+### 5. Set up Google Maps API (optional -- for drive place search and auto drive time)
+
+The drive sub-type uses Google Maps to power place search and automatic drive time calculation. Without this key, origin/destination fields fall back to plain text input with no auto-calculation.
+
+#### Create a Google Cloud project and enable APIs
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select an existing one) from the project dropdown at the top
+3. Open **APIs & Services > Library** from the left sidebar
+4. Search for and enable each of these APIs:
+   - **Places API (New)** -- powers the place search combobox (`places.googleapis.com`)
+   - **Distance Matrix API** -- calculates drive time between two places (`distance-matrix-backend.googleapis.com`)
+
+#### Create an API key
+
+1. Go to **APIs & Services > Credentials**
+2. Click **+ Create Credentials > API key**
+3. Copy the generated key
+4. (Recommended) Click **Edit API key** to add restrictions:
+   - Under **Application restrictions**, select **IP addresses** and add your server's IP (or leave unrestricted for local development)
+   - Under **API restrictions**, select **Restrict key** and choose only **Places API (New)** and **Distance Matrix API**
+5. Click **Save**
+
+#### Add the key to your environment
+
+Add the key to your `.env.local` file:
+
+```
+GOOGLE_MAPS_API_KEY=AIzaSy...your-key-here
+```
+
+If deploying to Vercel, also add `GOOGLE_MAPS_API_KEY` in your Vercel project settings under **Settings > Environment Variables**.
+
+#### Billing
+
+Google Maps APIs require a billing account linked to your Google Cloud project. Google provides a $200/month free tier which covers roughly:
+- ~11,500 Places Text Search requests
+- ~40,000 Distance Matrix requests
+
+Go to **Billing** in the Cloud Console to set up a billing account if you don't have one. You can set budget alerts to avoid unexpected charges.
+
+### 6. Start the dev server
 
 ```bash
 npm run dev
