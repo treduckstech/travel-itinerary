@@ -406,13 +406,15 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </Button>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={type === "restaurant" ? "" : "grid grid-cols-2 gap-4"}>
                 <div className="space-y-2">
                   <Label htmlFor="event-start">
                     {type === "flight"
                       ? "Departure"
                       : type === "hotel"
                       ? "Check-in"
+                      : type === "restaurant"
+                      ? "Reservation Time"
                       : "Start"}
                   </Label>
                   <Input
@@ -427,26 +429,28 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="event-end">
-                    {type === "flight"
-                      ? "Arrival"
-                      : type === "hotel"
-                      ? "Check-out"
-                      : "End"}
-                  </Label>
-                  <Input
-                    id="event-end"
-                    type="datetime-local"
-                    value={endDatetime}
-                    onChange={(e) => setEndDatetime(e.target.value)}
-                  />
-                  {type === "flight" && flightDuration && (
-                    <p className="text-xs text-muted-foreground">
-                      Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
-                    </p>
-                  )}
-                </div>
+                {type !== "restaurant" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="event-end">
+                      {type === "flight"
+                        ? "Arrival"
+                        : type === "hotel"
+                        ? "Check-out"
+                        : "End"}
+                    </Label>
+                    <Input
+                      id="event-end"
+                      type="datetime-local"
+                      value={endDatetime}
+                      onChange={(e) => setEndDatetime(e.target.value)}
+                    />
+                    {type === "flight" && flightDuration && (
+                      <p className="text-xs text-muted-foreground">
+                        Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {type === "flight" ? (
