@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Pencil, Search, Loader2 } from "lucide-react";
 import type { TripEvent, EventType, FlightLookupResult } from "@/lib/types";
+import { AirportCombobox } from "@/components/events/airport-combobox";
 
 interface EventFormDialogProps {
   tripId: string;
@@ -56,7 +57,20 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [manualEntry, setManualEntry] = useState(!!event);
   const [flightDate, setFlightDate] = useState("");
-  const [depAirport, setDepAirport] = useState("");
+  const [depAirport, setDepAirport] = useState(() => {
+    if (event?.type === "flight" && event.location) {
+      const parts = event.location.split("→").map((s) => s.trim());
+      return parts[0] || "";
+    }
+    return "";
+  });
+  const [arrAirport, setArrAirport] = useState(() => {
+    if (event?.type === "flight" && event.location) {
+      const parts = event.location.split("→").map((s) => s.trim());
+      return parts[1] || "";
+    }
+    return "";
+  });
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -75,6 +89,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setManualEntry(false);
       setFlightDate("");
       setDepAirport("");
+      setArrAirport("");
       setFlightDuration(null);
     }
     setError(null);
@@ -118,8 +133,11 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
       const result = data as FlightLookupResult;
       setTitle(result.title);
-      if (result.route) {
-        setLocation(result.route);
+      if (result.departure_airport) {
+        setDepAirport(result.departure_airport);
+      }
+      if (result.arrival_airport) {
+        setArrAirport(result.arrival_airport);
       }
       if (result.duration_minutes) {
         setFlightDuration(result.duration_minutes);
@@ -151,6 +169,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     setLoading(true);
     setError(null);
 
+    const flightLocation = [depAirport, arrAirport].filter(Boolean).join(" → ") || null;
+
     const eventData = {
       trip_id: tripId,
       type,
@@ -160,7 +180,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       end_datetime: endDatetime
         ? new Date(endDatetime).toISOString()
         : null,
-      location: location || null,
+      location: type === "flight" ? flightLocation : (location || null),
       confirmation_number: null as string | null,
       notes: notes || null,
     };
@@ -293,12 +313,11 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dep-airport">Departure Airport</Label>
-                  <Input
+                  <AirportCombobox
                     id="dep-airport"
-                    placeholder="ATL"
                     value={depAirport}
-                    onChange={(e) => setDepAirport(e.target.value.toUpperCase())}
-                    maxLength={4}
+                    onSelect={setDepAirport}
+                    placeholder="Search airports..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -399,20 +418,37 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="event-location">Location</Label>
-                <Input
-                  id="event-location"
-                  placeholder={
-                    type === "flight"
-                      ? "SFO → CDG"
-                      : "123 Main St"
-                  }
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  maxLength={200}
-                />
-              </div>
+              {type === "flight" ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>From</Label>
+                    <AirportCombobox
+                      value={depAirport}
+                      onSelect={setDepAirport}
+                      placeholder="Departure"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>To</Label>
+                    <AirportCombobox
+                      value={arrAirport}
+                      onSelect={setArrAirport}
+                      placeholder="Arrival"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="event-location">Location</Label>
+                  <Input
+                    id="event-location"
+                    placeholder="123 Main St"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    maxLength={200}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="event-notes">Notes</Label>
