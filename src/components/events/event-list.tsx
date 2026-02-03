@@ -1,6 +1,5 @@
 import { format, parseISO } from "date-fns";
 import { EventCard } from "./event-card";
-import { Separator } from "@/components/ui/separator";
 import type { TripEvent } from "@/lib/types";
 
 interface EventListProps {
@@ -27,10 +26,9 @@ export function EventList({ events }: EventListProps) {
   const sortedDates = Object.keys(grouped).sort();
 
   return (
-    <div className="space-y-6">
-      {sortedDates.map((dateKey, i) => (
+    <div className="space-y-8">
+      {sortedDates.map((dateKey) => (
         <div key={dateKey}>
-          {i > 0 && <Separator className="mb-6" />}
           <h3 className="mb-3 font-semibold">
             {format(parseISO(dateKey), "EEEE, MMMM d, yyyy")}
           </h3>

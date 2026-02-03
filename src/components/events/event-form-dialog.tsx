@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, ChevronDown, Search, Loader2 } from "lucide-react";
+import { Plus, Pencil, Search, Loader2 } from "lucide-react";
 import type { TripEvent, EventType, FlightLookupResult } from "@/lib/types";
 
 interface EventFormDialogProps {
@@ -35,7 +35,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<EventType>(event?.type ?? "activity");
   const [title, setTitle] = useState(event?.title ?? "");
-  const [description, setDescription] = useState(event?.description ?? "");
   const [startDatetime, setStartDatetime] = useState(
     event?.start_datetime
       ? new Date(event.start_datetime).toISOString().slice(0, 16)
@@ -47,16 +46,14 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       : ""
   );
   const [location, setLocation] = useState(event?.location ?? "");
-  const [confirmationNumber, setConfirmationNumber] = useState(
-    event?.confirmation_number ?? ""
+  const [notes, setNotes] = useState(
+    [event?.confirmation_number, event?.description, event?.notes]
+      .filter(Boolean)
+      .join("\n") || ""
   );
-  const [notes, setNotes] = useState(event?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(false);
-  const [showDetails, setShowDetails] = useState(
-    !!(event && (event.description || event.location || event.confirmation_number || event.notes))
-  );
   const [manualEntry, setManualEntry] = useState(!!event);
   const [flightDate, setFlightDate] = useState("");
   const [depAirport, setDepAirport] = useState("");
@@ -71,13 +68,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     if (!isEditing) {
       setType("activity");
       setTitle("");
-      setDescription("");
       setStartDatetime("");
       setEndDatetime("");
       setLocation("");
-      setConfirmationNumber("");
       setNotes("");
-      setShowDetails(false);
       setManualEntry(false);
       setFlightDate("");
       setDepAirport("");
@@ -131,21 +125,18 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
         setFlightDuration(result.duration_minutes);
       }
 
-      // Pre-fill departure datetime: user's date + API's time
       if (flightDate && result.departure_time) {
         const apiTime = new Date(result.departure_time);
-        const timeStr = apiTime.toISOString().slice(11, 16); // "HH:MM"
+        const timeStr = apiTime.toISOString().slice(11, 16);
         const departure = `${flightDate}T${timeStr}`;
         setStartDatetime(departure);
 
-        // Auto-calculate arrival if we have duration
         if (result.duration_minutes) {
           setEndDatetime(computeArrival(departure, result.duration_minutes));
         }
       }
 
       setManualEntry(true);
-      setShowDetails(true);
       toast.success(flightDate ? "Flight found" : "Flight found — enter your departure date and time");
     } catch {
       setError("Failed to look up flight");
@@ -164,13 +155,13 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       trip_id: tripId,
       type,
       title,
-      description: description || null,
+      description: null as string | null,
       start_datetime: new Date(startDatetime).toISOString(),
       end_datetime: endDatetime
         ? new Date(endDatetime).toISOString()
         : null,
       location: location || null,
-      confirmation_number: confirmationNumber || null,
+      confirmation_number: null as string | null,
       notes: notes || null,
     };
 
@@ -242,7 +233,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           )}
 
-          {/* Type + Title — always shown */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Type</Label>
@@ -298,7 +288,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           </div>
 
-          {/* Flight lookup mode: flight # + departure info + lookup button */}
           {isFlightLookupMode && (
             <>
               <div className="grid grid-cols-2 gap-4">
@@ -349,7 +338,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </>
           )}
 
-          {/* Full form fields — shown for non-flight types or after lookup/manual entry */}
           {!isFlightLookupMode && (
             <>
               {type === "flight" && title.trim() && !startDatetime && (
@@ -411,69 +399,32 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               </div>
 
-              {/* Collapsible optional fields */}
-              {!showDetails ? (
-                <button
-                  type="button"
-                  onClick={() => setShowDetails(true)}
-                  className="flex w-full items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ChevronDown className="h-3.5 w-3.5" />
-                  More details (location, confirmation #, notes)
-                </button>
-              ) : (
-                <div className="space-y-4 border-t pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="event-location">Location</Label>
-                    <Input
-                      id="event-location"
-                      placeholder={
-                        type === "flight"
-                          ? "SFO → CDG"
-                          : "123 Main St"
-                      }
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      maxLength={200}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="event-location">Location</Label>
+                <Input
+                  id="event-location"
+                  placeholder={
+                    type === "flight"
+                      ? "SFO → CDG"
+                      : "123 Main St"
+                  }
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  maxLength={200}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="event-confirmation">Confirmation Number</Label>
-                    <Input
-                      id="event-confirmation"
-                      placeholder="ABC123"
-                      value={confirmationNumber}
-                      onChange={(e) => setConfirmationNumber(e.target.value)}
-                      maxLength={50}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="event-description">Description</Label>
-                    <Textarea
-                      id="event-description"
-                      placeholder="Optional description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={2}
-                      maxLength={500}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="event-notes">Notes</Label>
-                    <Textarea
-                      id="event-notes"
-                      placeholder="Additional notes"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={2}
-                      maxLength={500}
-                    />
-                  </div>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="event-notes">Notes</Label>
+                <Textarea
+                  id="event-notes"
+                  placeholder="Confirmation number, details, reminders..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  maxLength={1000}
+                />
+              </div>
 
               <DialogFooter>
                 <Button type="submit" disabled={loading}>

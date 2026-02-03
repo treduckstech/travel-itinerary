@@ -6,13 +6,12 @@ import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { TripCalendar } from "@/components/calendar/trip-calendar";
 import { EventList } from "@/components/events/event-list";
 import { EventFormDialog } from "@/components/events/event-form-dialog";
 import { TodoList } from "@/components/todos/todo-list";
 import { DeleteTripButton } from "@/components/trips/delete-trip-button";
-import { ArrowLeft, MapPin, Calendar, Pencil } from "lucide-react";
+import { MapPin, Calendar, Pencil } from "lucide-react";
 import type { Trip, TripEvent, Todo } from "@/lib/types";
 
 interface TripDetailPageProps {
@@ -51,15 +50,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Link href="/">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-      </div>
-
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">{typedTrip.name}</h1>
@@ -88,8 +78,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           <DeleteTripButton tripId={id} eventCount={typedEvents.length} todoCount={typedTodos.length} />
         </div>
       </div>
-
-      <Separator />
 
       <Tabs defaultValue="itinerary">
         <div className="flex items-center justify-between">

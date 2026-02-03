@@ -24,7 +24,6 @@ import {
   UtensilsCrossed,
   MapPin,
   Clock,
-  Hash,
   Trash2,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
@@ -64,9 +63,8 @@ export function EventCard({ event }: { event: TripEvent }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Badge variant="secondary" className={`shrink-0 ${config.color}`}>
-            <Icon className="mr-1 h-3 w-3" />
-            {event.type}
+          <Badge variant="secondary" className={`shrink-0 px-1.5 ${config.color}`}>
+            <Icon className="h-3 w-3" />
           </Badge>
           <span className="truncate font-semibold">{event.title}</span>
         </div>
@@ -114,17 +112,8 @@ export function EventCard({ event }: { event: TripEvent }) {
             {event.location}
           </div>
         )}
-        {event.confirmation_number && (
-          <div className="flex items-center gap-2">
-            <Hash className="h-3.5 w-3.5" />
-            {event.confirmation_number}
-          </div>
-        )}
-        {event.description && (
-          <p className="pt-1">{event.description}</p>
-        )}
         {event.notes && (
-          <p className="pt-1 italic">{event.notes}</p>
+          <p className="pt-1 whitespace-pre-line">{event.notes}</p>
         )}
       </CardContent>
     </Card>
