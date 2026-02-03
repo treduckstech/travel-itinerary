@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-interface GooglePlace {
-  id: string;
-  displayName?: { text: string };
-  formattedAddress?: string;
+interface GooglePlaceResult {
+  place_id: string;
+  name: string;
+  formatted_address: string;
 }
 
 export async function GET(request: NextRequest) {
@@ -25,18 +25,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(
-      "https://places.googleapis.com/v1/places:searchText",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
-        },
-        body: JSON.stringify({ textQuery: q.trim() }),
-      }
-    );
+    const url = new URL("https://maps.googleapis.com/maps/api/place/textsearch/json");
+    url.searchParams.set("query", q.trim());
+    url.searchParams.set("key", apiKey);
+
+    const response = await fetch(url.toString());
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => "");
@@ -48,10 +41,19 @@ export async function GET(request: NextRequest) {
     }
 
     const body = await response.json();
-    const places = (body.places ?? []).map((p: GooglePlace) => ({
-      id: p.id,
-      name: p.displayName?.text ?? "",
-      address: p.formattedAddress ?? "",
+
+    if (body.status !== "OK" && body.status !== "ZERO_RESULTS") {
+      console.error("Google Places API status:", body.status, body.error_message);
+      return NextResponse.json(
+        { error: body.error_message || `Place search error: ${body.status}` },
+        { status: 502 }
+      );
+    }
+
+    const places = (body.results ?? []).slice(0, 10).map((p: GooglePlaceResult) => ({
+      id: p.place_id,
+      name: p.name,
+      address: p.formatted_address ?? "",
     }));
 
     return NextResponse.json(places);

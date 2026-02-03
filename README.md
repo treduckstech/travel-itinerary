@@ -91,7 +91,7 @@ The drive sub-type uses Google Maps to power place search and automatic drive ti
 2. Create a new project (or select an existing one) from the project dropdown at the top
 3. Open **APIs & Services > Library** from the left sidebar
 4. Search for and enable each of these APIs:
-   - **Places API (New)** -- powers the place search combobox (`places.googleapis.com`)
+   - **Places API** -- powers the place search combobox (search for "Places API" in the library, _not_ "Places API (New)")
    - **Distance Matrix API** -- calculates drive time between two places (`distance-matrix-backend.googleapis.com`)
 
 #### Create an API key
@@ -101,7 +101,7 @@ The drive sub-type uses Google Maps to power place search and automatic drive ti
 3. Copy the generated key
 4. (Recommended) Click **Edit API key** to add restrictions:
    - Under **Application restrictions**, select **IP addresses** and add your server's IP (or leave unrestricted for local development)
-   - Under **API restrictions**, select **Restrict key** and choose only **Places API (New)** and **Distance Matrix API**
+   - Under **API restrictions**, select **Restrict key** and choose only **Places API** and **Distance Matrix API**
 5. Click **Save**
 
 #### Add the key to your environment

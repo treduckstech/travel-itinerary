@@ -38,16 +38,19 @@ export function PlaceSearch({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [apiAvailable, setApiAvailable] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) {
       setResults([]);
+      setSearchError(null);
       return;
     }
 
     setLoading(true);
+    setSearchError(null);
     try {
       const res = await fetch(`/api/places/search?q=${encodeURIComponent(q.trim())}`);
       if (res.status === 503) {
@@ -56,12 +59,15 @@ export function PlaceSearch({
         return;
       }
       if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Search failed" }));
+        setSearchError(data.error || "Search failed");
         setResults([]);
         return;
       }
       const data: PlaceResult[] = await res.json();
       setResults(data);
     } catch {
+      setSearchError("Failed to search");
       setResults([]);
     } finally {
       setLoading(false);
@@ -116,7 +122,12 @@ export function PlaceSearch({
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             )}
-            {!loading && query.trim() && results.length === 0 && (
+            {!loading && searchError && (
+              <div className="px-3 py-4 text-sm text-destructive">
+                {searchError}
+              </div>
+            )}
+            {!loading && !searchError && query.trim() && results.length === 0 && (
               <CommandEmpty>No places found.</CommandEmpty>
             )}
             {query.trim() && (
@@ -136,7 +147,7 @@ export function PlaceSearch({
                       <span className="font-semibold">{p.name}</span>
                       {p.address && (
                         <span className="ml-1.5 text-muted-foreground">
-                          — {p.address}
+                          -- {p.address}
                         </span>
                       )}
                     </div>
