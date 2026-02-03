@@ -57,6 +57,7 @@ interface AirLabsRoute {
   arr_time_utc?: string;
   duration?: number;
   cs_flight_iata?: string;
+  days?: string; // e.g. "1234567" where 1=Mon, 7=Sun
 }
 
 interface AirLabsRoutesResponse {
@@ -146,9 +147,17 @@ async function lookupViaFlightAware(
 
 // --- AirLabs lookup ---
 
+function getDayOfWeek(dateStr: string): string {
+  // Returns "1"-"7" where 1=Mon, 7=Sun (matching AirLabs format)
+  const d = new Date(dateStr + "T00:00:00");
+  const jsDay = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  return jsDay === 0 ? "7" : String(jsDay);
+}
+
 async function lookupViaAirLabs(
   apiKey: string,
-  normalized: string
+  normalized: string,
+  flightDate: string | null
 ): Promise<LookupResult | null> {
   try {
     // Use /routes endpoint — returns scheduled route data (works for future flights & codeshares)
@@ -159,7 +168,15 @@ async function lookupViaAirLabs(
     const data: AirLabsRoutesResponse = await response.json();
     if (data.error || !data.response?.length) return null;
 
-    const route = data.response[0];
+    let route = data.response[0];
+
+    // If a date was provided and multiple routes exist, pick the one that operates on that day
+    if (flightDate && data.response.length > 1) {
+      const dayNum = getDayOfWeek(flightDate);
+      const match = data.response.find((r) => r.days?.includes(dayNum));
+      if (match) route = match;
+    }
+
     const depAirport = route.dep_iata || route.dep_icao || "";
     const arrAirport = route.arr_iata || route.arr_icao || "";
 
@@ -202,8 +219,9 @@ export async function GET(request: NextRequest) {
   }
 
   const normalized = flightIata.replace(/\s+/g, "").toUpperCase();
+  const flightDate = request.nextUrl.searchParams.get("flight_date"); // optional YYYY-MM-DD
 
-  const debug: Record<string, unknown> = { normalized, providers: [] as string[] };
+  const debug: Record<string, unknown> = { normalized, flightDate, providers: [] as string[] };
 
   try {
     // Try FlightAware first (better data), fall back to AirLabs (better codeshare support)
@@ -217,7 +235,7 @@ export async function GET(request: NextRequest) {
 
     if (!result && airLabsKey) {
       (debug.providers as string[]).push("airlabs");
-      result = await lookupViaAirLabs(airLabsKey, normalized);
+      result = await lookupViaAirLabs(airLabsKey, normalized, flightDate);
       debug.airlabs = result ? "found" : "not_found";
     }
 

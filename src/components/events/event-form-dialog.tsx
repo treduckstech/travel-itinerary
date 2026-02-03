@@ -58,6 +58,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     !!(event && (event.description || event.location || event.confirmation_number || event.notes))
   );
   const [manualEntry, setManualEntry] = useState(!!event);
+  const [flightDate, setFlightDate] = useState("");
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -77,6 +78,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setNotes("");
       setShowDetails(false);
       setManualEntry(false);
+      setFlightDate("");
       setFlightDuration(null);
     }
     setError(null);
@@ -101,7 +103,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     setError(null);
 
     try {
-      const url = `/api/flights/lookup?flight_iata=${encodeURIComponent(title.trim())}`;
+      let url = `/api/flights/lookup?flight_iata=${encodeURIComponent(title.trim())}`;
+      if (flightDate) {
+        url += `&flight_date=${encodeURIComponent(flightDate)}`;
+      }
       const res = await fetch(url);
       const data = await res.json();
 
@@ -120,9 +125,23 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       if (result.duration_minutes) {
         setFlightDuration(result.duration_minutes);
       }
+
+      // Pre-fill departure datetime: user's date + API's time
+      if (flightDate && result.departure_time) {
+        const apiTime = new Date(result.departure_time);
+        const timeStr = apiTime.toISOString().slice(11, 16); // "HH:MM"
+        const departure = `${flightDate}T${timeStr}`;
+        setStartDatetime(departure);
+
+        // Auto-calculate arrival if we have duration
+        if (result.duration_minutes) {
+          setEndDatetime(computeArrival(departure, result.duration_minutes));
+        }
+      }
+
       setManualEntry(true);
       setShowDetails(true);
-      toast.success("Flight found — enter your departure date and time");
+      toast.success(flightDate ? "Flight found" : "Flight found — enter your departure date and time");
     } catch {
       setError("Failed to look up flight");
       setManualEntry(true);
@@ -273,9 +292,19 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           </div>
 
-          {/* Flight lookup mode: just flight # + lookup button */}
+          {/* Flight lookup mode: flight # + date + lookup button */}
           {isFlightLookupMode && (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="flight-date">Departure Date</Label>
+                <Input
+                  id="flight-date"
+                  type="date"
+                  value={flightDate}
+                  onChange={(e) => setFlightDate(e.target.value)}
+                />
+              </div>
+
               <Button
                 type="button"
                 variant="outline"
