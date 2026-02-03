@@ -130,12 +130,23 @@ export async function GET(request: NextRequest) {
     const arrivalTime =
       flight.scheduled_in || flight.estimated_in || flight.actual_in || null;
 
+    // Calculate flight duration from departure/arrival times
+    let durationMinutes: number | null = null;
+    if (departureTime && arrivalTime) {
+      const dep = new Date(departureTime).getTime();
+      const arr = new Date(arrivalTime).getTime();
+      if (arr > dep) {
+        durationMinutes = Math.round((arr - dep) / 60000);
+      }
+    }
+
     return NextResponse.json({
       title,
       departure_airport: depAirport,
       arrival_airport: arrAirport,
       departure_time: departureTime,
       arrival_time: arrivalTime,
+      duration_minutes: durationMinutes,
       route: [depAirport, arrAirport].filter(Boolean).join(" → "),
     });
   } catch {

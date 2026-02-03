@@ -29,6 +29,7 @@ export interface FlightLookupResult {
   arrival_airport: string;
   departure_time: string | null;
   arrival_time: string | null;
+  duration_minutes: number | null;
   route: string;
 }
 

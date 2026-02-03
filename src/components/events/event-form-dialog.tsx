@@ -57,8 +57,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [showDetails, setShowDetails] = useState(
     !!(event && (event.description || event.location || event.confirmation_number || event.notes))
   );
-  const [flightDate, setFlightDate] = useState("");
   const [manualEntry, setManualEntry] = useState(!!event);
+  const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
@@ -76,17 +76,23 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setConfirmationNumber("");
       setNotes("");
       setShowDetails(false);
-      setFlightDate("");
       setManualEntry(false);
+      setFlightDuration(null);
     }
     setError(null);
   }
 
-  function mergeDateWithTime(userDate: string, apiDatetime: string): string {
-    const timePart = apiDatetime.includes("T")
-      ? apiDatetime.split("T")[1]
-      : apiDatetime.slice(11);
-    return `${userDate}T${timePart.slice(0, 5)}`;
+  function computeArrival(departureDatetime: string, durationMin: number): string {
+    const dep = new Date(departureDatetime);
+    const arr = new Date(dep.getTime() + durationMin * 60000);
+    return arr.toISOString().slice(0, 16);
+  }
+
+  function handleDepartureChange(value: string) {
+    setStartDatetime(value);
+    if (flightDuration && value) {
+      setEndDatetime(computeArrival(value, flightDuration));
+    }
   }
 
   async function handleFlightLookup() {
@@ -95,11 +101,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     setError(null);
 
     try {
-      let url = `/api/flights/lookup?flight_iata=${encodeURIComponent(title.trim())}`;
-      if (flightDate) {
-        url += `&flight_date=${encodeURIComponent(flightDate)}`;
-      }
-
+      const url = `/api/flights/lookup?flight_iata=${encodeURIComponent(title.trim())}`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -115,27 +117,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       if (result.route) {
         setLocation(result.route);
       }
-      if (result.departure_time) {
-        if (flightDate) {
-          setStartDatetime(mergeDateWithTime(flightDate, result.departure_time));
-        } else {
-          setStartDatetime(
-            new Date(result.departure_time).toISOString().slice(0, 16)
-          );
-        }
-      }
-      if (result.arrival_time) {
-        if (flightDate) {
-          setEndDatetime(mergeDateWithTime(flightDate, result.arrival_time));
-        } else {
-          setEndDatetime(
-            new Date(result.arrival_time).toISOString().slice(0, 16)
-          );
-        }
+      if (result.duration_minutes) {
+        setFlightDuration(result.duration_minutes);
       }
       setManualEntry(true);
       setShowDetails(true);
-      toast.success("Flight details filled in");
+      toast.success("Flight found — enter your departure date and time");
     } catch {
       setError("Failed to look up flight");
       setManualEntry(true);
@@ -241,7 +228,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                   setType(v as EventType);
                   if (v !== "flight") {
                     setManualEntry(false);
-                    setFlightDate("");
+                    setFlightDuration(null);
                   }
                 }}
               >
@@ -286,19 +273,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           </div>
 
-          {/* Flight lookup mode: date picker + lookup button */}
+          {/* Flight lookup mode: just flight # + lookup button */}
           {isFlightLookupMode && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="flight-date">Departure Date</Label>
-                <Input
-                  id="flight-date"
-                  type="date"
-                  value={flightDate}
-                  onChange={(e) => setFlightDate(e.target.value)}
-                />
-              </div>
-
               <Button
                 type="button"
                 variant="outline"
@@ -357,7 +334,11 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     id="event-start"
                     type="datetime-local"
                     value={startDatetime}
-                    onChange={(e) => setStartDatetime(e.target.value)}
+                    onChange={(e) =>
+                      type === "flight" && flightDuration
+                        ? handleDepartureChange(e.target.value)
+                        : setStartDatetime(e.target.value)
+                    }
                     required
                   />
                 </div>
@@ -375,6 +356,11 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     value={endDatetime}
                     onChange={(e) => setEndDatetime(e.target.value)}
                   />
+                  {type === "flight" && flightDuration && (
+                    <p className="text-xs text-muted-foreground">
+                      Auto-calculated from {Math.floor(flightDuration / 60)}h {flightDuration % 60}m flight
+                    </p>
+                  )}
                 </div>
               </div>
 
