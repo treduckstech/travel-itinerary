@@ -29,3 +29,4 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `FLIGHTAWARE_API_KEY` - FlightAware AeroAPI key for flight lookup (optional, server-side only)
 - `AIRLABS_API_KEY` - AirLabs API key for flight lookup fallback (optional, server-side only)
+- `BENEATS_API_KEY` - BenEats API key for restaurant search (optional, server-side only)

@@ -75,10 +75,22 @@ export function EventCard({ event }: { event: TripEvent }) {
                   ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
               </span>
               {event.location && (
-                <span className="flex items-center gap-1 truncate">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{event.location}</span>
-                </span>
+                event.type === "restaurant" && event.description?.startsWith("https://www.google.com/maps") ? (
+                  <a
+                    href={event.description}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 truncate hover:text-foreground transition-colors"
+                  >
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{event.location}</span>
+                  </a>
+                ) : (
+                  <span className="flex items-center gap-1 truncate">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{event.location}</span>
+                  </span>
+                )
               )}
             </div>
           </div>

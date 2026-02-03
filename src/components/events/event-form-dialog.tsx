@@ -23,9 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Search, Loader2 } from "lucide-react";
-import type { TripEvent, EventType, FlightLookupResult } from "@/lib/types";
+import { Plus, Pencil, Search, Loader2, MapPin } from "lucide-react";
+import type { TripEvent, EventType, FlightLookupResult, BenEatsRestaurant } from "@/lib/types";
 import { AirportCombobox } from "@/components/events/airport-combobox";
+import { RestaurantSearch } from "@/components/events/restaurant-search";
 
 interface EventFormDialogProps {
   tripId: string;
@@ -72,6 +73,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     return "";
   });
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
+  const [description, setDescription] = useState(event?.description ?? "");
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
@@ -91,6 +93,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setDepAirport("");
       setArrAirport("");
       setFlightDuration(null);
+      setDescription("");
     }
     setError(null);
   }
@@ -175,7 +178,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       trip_id: tripId,
       type,
       title,
-      description: null as string | null,
+      description: description || null,
       start_datetime: new Date(startDatetime).toISOString(),
       end_datetime: endDatetime
         ? new Date(endDatetime).toISOString()
@@ -211,6 +214,26 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     resetForm();
     toast.success(isEditing ? "Event updated" : "Event added");
     router.refresh();
+  }
+
+  function handleRestaurantSelect(restaurant: BenEatsRestaurant) {
+    setTitle(restaurant.name);
+    const addressParts = [restaurant.address, restaurant.city, restaurant.state].filter(Boolean);
+    setLocation(addressParts.join(", "));
+
+    const noteParts: string[] = [];
+    if (restaurant.cuisine_type) noteParts.push(`Cuisine: ${restaurant.cuisine_type}`);
+    if (restaurant.price_range) noteParts.push(`Price: ${restaurant.price_range}`);
+    if (restaurant.rating) noteParts.push(`Rating: ${restaurant.rating}/5`);
+    if (noteParts.length) setNotes(noteParts.join("\n"));
+
+    if (restaurant.latitude && restaurant.longitude) {
+      setDescription(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`);
+    } else if (restaurant.google_place_id) {
+      setDescription(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.name)}&query_place_id=${restaurant.google_place_id}`);
+    } else {
+      setDescription("");
+    }
   }
 
   const typeLabels: Record<EventType, string> = {
@@ -289,22 +312,30 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                   ? "Restaurant"
                   : "Activity"}
               </Label>
-              <Input
-                id="event-title"
-                placeholder={
-                  type === "flight"
-                    ? "UA123"
-                    : type === "hotel"
-                    ? "Grand Hotel"
-                    : type === "restaurant"
-                    ? "Le Petit Bistro"
-                    : "City Walking Tour"
-                }
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                maxLength={100}
-              />
+              {type === "restaurant" ? (
+                <RestaurantSearch
+                  id="event-title"
+                  value={title}
+                  onSelect={handleRestaurantSelect}
+                  onManualEntry={(name) => setTitle(name)}
+                  placeholder="Search restaurants..."
+                />
+              ) : (
+                <Input
+                  id="event-title"
+                  placeholder={
+                    type === "flight"
+                      ? "UA123"
+                      : type === "hotel"
+                      ? "Grand Hotel"
+                      : "City Walking Tour"
+                  }
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  maxLength={100}
+                />
+              )}
             </div>
           </div>
 
@@ -447,6 +478,17 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     onChange={(e) => setLocation(e.target.value)}
                     maxLength={200}
                   />
+                  {type === "restaurant" && description && description.startsWith("https://www.google.com/maps") && (
+                    <a
+                      href={description}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      View on Google Maps
+                    </a>
+                  )}
                 </div>
               )}
 

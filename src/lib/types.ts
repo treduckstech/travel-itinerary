@@ -33,6 +33,20 @@ export interface FlightLookupResult {
   route: string;
 }
 
+export interface BenEatsRestaurant {
+  id: number;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  cuisine_type: string | null;
+  price_range: string | null;
+  rating: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  google_place_id: string | null;
+}
+
 export interface Todo {
   id: string;
   trip_id: string;
