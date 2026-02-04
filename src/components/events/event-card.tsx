@@ -67,16 +67,23 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
   const triedAutoExpand = useRef(false);
   const router = useRouter();
 
-  // Auto-expand detail on fillHeight cards if there's enough vertical space
+  // Auto-expand detail on fillHeight cards once the grid gives the card its final height
   useEffect(() => {
-    if (!fillHeight || !isExpandable(event) || triedAutoExpand.current) return;
+    if (!fillHeight || !isExpandable(event)) return;
     const card = cardRef.current;
     if (!card) return;
-    const extraSpace = card.clientHeight - card.scrollHeight;
-    if (extraSpace > 100) {
-      triedAutoExpand.current = true;
-      setExpanded(true);
-    }
+
+    const observer = new ResizeObserver(() => {
+      if (triedAutoExpand.current) return;
+      const extraSpace = card.clientHeight - card.scrollHeight;
+      if (extraSpace > 100) {
+        triedAutoExpand.current = true;
+        setExpanded(true);
+      }
+    });
+
+    observer.observe(card);
+    return () => observer.disconnect();
   }, [fillHeight, event]);
 
   // After auto-expanding, check if content actually fits; collapse if it overflows
