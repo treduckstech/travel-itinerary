@@ -82,16 +82,6 @@ export function EventList({ events, readOnly }: EventListProps) {
     return { hotel, startRow, endRow };
   });
 
-  // Build a set of dates covered by any hotel (for rendering date labels in column 2)
-  const hotelCoveredDates = new Set<string>();
-  hotelEvents.forEach((hotel) => {
-    const start = parseISO(hotel.start_datetime);
-    const end = parseISO(hotel.end_datetime!);
-    eachDayOfInterval({ start, end }).forEach((day) => {
-      hotelCoveredDates.add(format(day, "yyyy-MM-dd"));
-    });
-  });
-
   const hasHotels = hotelPositions.length > 0;
 
   return (
@@ -100,7 +90,7 @@ export function EventList({ events, readOnly }: EventListProps) {
       <div
         className={`hidden ${hasHotels ? "md:grid" : ""}`}
         style={{
-          gridTemplateColumns: "3fr auto 2fr",
+          gridTemplateColumns: "3fr 2fr",
           gridTemplateRows: `repeat(${sortedDates.length}, auto)`,
         }}
       >
@@ -151,30 +141,12 @@ export function EventList({ events, readOnly }: EventListProps) {
           );
         })}
 
-        {/* Date labels next to hotel cards (column 2) */}
-        {sortedDates
-          .filter((dateKey) => hotelCoveredDates.has(dateKey))
-          .map((dateKey) => {
-            const row = dateToRow.get(dateKey)!;
-            return (
-              <div
-                key={`label-${dateKey}`}
-                style={{ gridColumn: 2, gridRow: row }}
-                className="relative z-10 flex items-start px-3 pt-0.5"
-              >
-                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
-                  {format(parseISO(dateKey), "MMM d")}
-                </span>
-              </div>
-            );
-          })}
-
-        {/* Right column: spanning hotel cards (column 3) */}
+        {/* Right column: spanning hotel cards */}
         {hotelPositions.map(({ hotel, startRow, endRow }) => (
           <div
             key={hotel.id}
             style={{
-              gridColumn: 3,
+              gridColumn: 2,
               gridRow: `${startRow} / ${endRow}`,
             }}
             className="relative z-10 pb-4 pt-8"
