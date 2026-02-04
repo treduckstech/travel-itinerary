@@ -110,6 +110,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [driveDuration, setDriveDuration] = useState<number | null>(null);
   const [driveLoading, setDriveLoading] = useState(false);
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
+  const [confirmationNumber, setConfirmationNumber] = useState(event?.confirmation_number ?? "");
   const [description, setDescription] = useState(event?.description ?? "");
   const router = useRouter();
   const supabase = createClient();
@@ -139,6 +140,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setDriveDuration(null);
       setDriveLoading(false);
       setFlightDuration(null);
+      setConfirmationNumber("");
       setDescription("");
     }
     setError(null);
@@ -268,18 +270,23 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
         ? `${driveFrom} → ${driveTo}`
         : title;
 
+    let finalDescription = description || null;
+    if (type === "travel" && subType === "drive" && driveFromAddress && driveToAddress) {
+      finalDescription = `${driveFromAddress}|||${driveToAddress}`;
+    }
+
     const eventData = {
       trip_id: tripId,
       type,
       sub_type: type === "travel" ? subType : null,
       title: finalTitle,
-      description: description || null,
+      description: finalDescription,
       start_datetime: new Date(startDatetime).toISOString(),
       end_datetime: endDatetime
         ? new Date(endDatetime).toISOString()
         : null,
       location: type === "travel" ? getTravelLocation() : (location || null),
-      confirmation_number: null as string | null,
+      confirmation_number: confirmationNumber || null,
       notes: notes || null,
     };
 
@@ -321,6 +328,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     if (restaurant.price_range) noteParts.push(`Price: ${restaurant.price_range}`);
     if (restaurant.rating) noteParts.push(`Rating: ${restaurant.rating}/5`);
     if (noteParts.length) setNotes(noteParts.join("\n"));
+
+    if (restaurant.id) {
+      setConfirmationNumber(`beneats:${restaurant.id}`);
+    }
 
     if (restaurant.latitude && restaurant.longitude) {
       setDescription(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`);

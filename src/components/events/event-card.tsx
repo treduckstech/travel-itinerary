@@ -15,7 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { EventFormDialog } from "./event-form-dialog";
+import { DriveDetailCard } from "./drive-detail-card";
+import { RestaurantDetailCard } from "./restaurant-detail-card";
 import {
   Plane,
   Hotel,
@@ -26,6 +32,7 @@ import {
   TrainFront,
   Ship,
   Car,
+  ChevronDown,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 
@@ -46,15 +53,24 @@ const subTypeIcons: Record<string, React.ElementType> = {
   drive: Car,
 };
 
+function isExpandable(event: TripEvent): boolean {
+  return (
+    event.type === "restaurant" ||
+    (event.type === "travel" && event.sub_type === "drive")
+  );
+}
+
 export function EventCard({ event }: { event: TripEvent }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const config = typeConfig[event.type];
   const Icon = (event.type === "travel" && event.sub_type && subTypeIcons[event.sub_type])
     ? subTypeIcons[event.sub_type]
     : config.icon;
+  const expandable = isExpandable(event);
 
   async function handleDelete() {
     setDeleteLoading(true);
@@ -69,80 +85,122 @@ export function EventCard({ event }: { event: TripEvent }) {
     router.refresh();
   }
 
-  return (
-    <div className={`group flex gap-3 rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30`}>
-      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconBg}`}>
-        <Icon className="h-4 w-4" />
-      </div>
+  const cardContent = (
+    <>
+      <div className="flex gap-3">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconBg}`}>
+          <Icon className="h-4 w-4" />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate font-semibold leading-tight">{event.title}</p>
-            <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {format(new Date(event.start_datetime), "h:mm a")}
-                {event.end_datetime &&
-                  ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
-              </span>
-              {event.location && (
-                event.type === "restaurant" && event.description?.startsWith("https://www.google.com/maps") ? (
-                  <a
-                    href={event.description}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 truncate hover:text-foreground transition-colors"
-                  >
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{event.location}</span>
-                  </a>
-                ) : (
-                  <span className="flex items-center gap-1 truncate">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{event.location}</span>
-                  </span>
-                )
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate font-semibold leading-tight">{event.title}</p>
+              <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(event.start_datetime), "h:mm a")}
+                  {event.end_datetime &&
+                    ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
+                </span>
+                {event.location && (
+                  event.type === "restaurant" && event.description?.startsWith("https://www.google.com/maps") ? (
+                    <a
+                      href={event.description}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 truncate hover:text-foreground transition-colors"
+                    >
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{event.location}</span>
+                    </a>
+                  ) : (
+                    <span className="flex items-center gap-1 truncate">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{event.location}</span>
+                    </span>
+                  )
+                )}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-0.5">
+              {expandable && (
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                />
               )}
+              <div
+                className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <EventFormDialog tripId={event.trip_id} event={event} />
+                <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="font-display text-xl">Delete Event</DialogTitle>
+                      <DialogDescription>
+                        This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleDelete}
+                        disabled={deleteLoading}
+                      >
+                        {deleteLoading ? "Deleting..." : "Delete"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-            <EventFormDialog tripId={event.trip_id} event={event} />
-            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="font-display text-xl">Delete Event</DialogTitle>
-                  <DialogDescription>
-                    This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDelete}
-                    disabled={deleteLoading}
-                  >
-                    {deleteLoading ? "Deleting..." : "Delete"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+          {event.notes && !expandable && (
+            <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{event.notes}</p>
+          )}
         </div>
-
-        {event.notes && (
-          <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{event.notes}</p>
-        )}
       </div>
+
+      {expandable && expanded && (
+        <div className="ml-12">
+          {event.type === "travel" && event.sub_type === "drive" && (
+            <DriveDetailCard event={event} />
+          )}
+          {event.type === "restaurant" && (
+            <RestaurantDetailCard event={event} />
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  if (expandable) {
+    return (
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CollapsibleTrigger asChild>
+          <div className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 cursor-pointer`}>
+            {cardContent}
+          </div>
+        </CollapsibleTrigger>
+      </Collapsible>
+    );
+  }
+
+  return (
+    <div className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30`}>
+      {cardContent}
     </div>
   );
 }
