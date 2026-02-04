@@ -114,6 +114,30 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
   const [confirmationNumber, setConfirmationNumber] = useState(event?.confirmation_number ?? "");
   const [description, setDescription] = useState(event?.description ?? "");
+  const [trainOperator, setTrainOperator] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "train" && event.description?.includes("|||")) {
+      return event.description.split("|||")[0] || "";
+    }
+    return "";
+  });
+  const [trainClass, setTrainClass] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "train" && event.description?.includes("|||")) {
+      return event.description.split("|||")[1] || "";
+    }
+    return "";
+  });
+  const [trainCoach, setTrainCoach] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "train" && event.description?.includes("|||")) {
+      return event.description.split("|||")[2] || "";
+    }
+    return "";
+  });
+  const [trainSeat, setTrainSeat] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "train" && event.description?.includes("|||")) {
+      return event.description.split("|||")[3] || "";
+    }
+    return "";
+  });
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
@@ -144,6 +168,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setFlightDuration(null);
       setConfirmationNumber("");
       setDescription("");
+      setTrainOperator("");
+      setTrainClass("");
+      setTrainCoach("");
+      setTrainSeat("");
     }
     setError(null);
   }
@@ -275,6 +303,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     let finalDescription = description || null;
     if (type === "travel" && subType === "drive" && driveFromAddress && driveToAddress) {
       finalDescription = `${driveFromAddress}|||${driveToAddress}`;
+    }
+    if (type === "travel" && subType === "train") {
+      const parts = [trainOperator, trainClass, trainCoach, trainSeat];
+      if (parts.some((p) => p.trim())) {
+        finalDescription = parts.join("|||");
+      }
     }
 
     const eventData = {
@@ -594,7 +628,136 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </Button>
               )}
 
-              {type === "travel" && subType === "drive" ? (
+              {type === "travel" && subType === "train" ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>From</Label>
+                      <StationCombobox
+                        value={depStation}
+                        onSelect={setDepStation}
+                        placeholder="Departure station"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>To</Label>
+                      <StationCombobox
+                        value={arrStation}
+                        onSelect={setArrStation}
+                        placeholder="Arrival station"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="train-departure">Departure</Label>
+                      <Input
+                        id="train-departure"
+                        type="datetime-local"
+                        value={startDatetime}
+                        onChange={(e) => setStartDatetime(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="train-arrival">Arrival</Label>
+                      <Input
+                        id="train-arrival"
+                        type="datetime-local"
+                        value={endDatetime}
+                        onChange={(e) => setEndDatetime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="train-confirmation">Confirmation Number</Label>
+                    <Input
+                      id="train-confirmation"
+                      placeholder="ABC123"
+                      value={confirmationNumber}
+                      onChange={(e) => setConfirmationNumber(e.target.value)}
+                      maxLength={50}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="train-operator">Operator</Label>
+                      <Select value={trainOperator} onValueChange={setTrainOperator}>
+                        <SelectTrigger id="train-operator">
+                          <SelectValue placeholder="Select operator" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Italo">Italo</SelectItem>
+                          <SelectItem value="Trenitalia">Trenitalia</SelectItem>
+                          <SelectItem value="Eurostar">Eurostar</SelectItem>
+                          <SelectItem value="TGV">TGV</SelectItem>
+                          <SelectItem value="ICE">ICE</SelectItem>
+                          <SelectItem value="Amtrak">Amtrak</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="train-class">Class</Label>
+                      <Input
+                        id="train-class"
+                        placeholder="e.g. Prima, Standard"
+                        value={trainClass}
+                        onChange={(e) => setTrainClass(e.target.value)}
+                        maxLength={50}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="train-coach">Coach</Label>
+                      <Input
+                        id="train-coach"
+                        placeholder="e.g. 5"
+                        value={trainCoach}
+                        onChange={(e) => setTrainCoach(e.target.value)}
+                        maxLength={10}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="train-seat">Seat</Label>
+                      <Input
+                        id="train-seat"
+                        placeholder="e.g. 12A"
+                        value={trainSeat}
+                        onChange={(e) => setTrainSeat(e.target.value)}
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="train-notes">Notes</Label>
+                    <Textarea
+                      id="train-notes"
+                      placeholder="Additional details..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={2}
+                      maxLength={1000}
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="submit" disabled={loading}>
+                      {loading
+                        ? "Saving..."
+                        : isEditing
+                        ? "Save Changes"
+                        : "Add Event"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              ) : type === "travel" && subType === "drive" ? (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -673,7 +836,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                   <div className={type === "restaurant" ? "" : "grid grid-cols-2 gap-4"}>
                     <div className="space-y-2">
                       <Label htmlFor="event-start">
-                        {type === "travel" && (subType === "flight" || subType === "train" || subType === "ferry")
+                        {type === "travel" && (subType === "flight" || subType === "ferry")
                           ? "Departure"
                           : type === "hotel"
                           ? "Check-in"
@@ -734,7 +897,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     />
                   </div>
                 </div>
-              ) : type === "travel" && (subType === "train" || subType === "ferry") ? (
+              ) : type === "travel" && subType === "ferry" ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>From</Label>
@@ -777,27 +940,31 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               ) : null}
 
-              <div className="space-y-2">
-                <Label htmlFor="event-notes">Notes</Label>
-                <Textarea
-                  id="event-notes"
-                  placeholder="Confirmation number, details, reminders..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  maxLength={1000}
-                />
-              </div>
+              {!(type === "travel" && subType === "train") && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-notes">Notes</Label>
+                    <Textarea
+                      id="event-notes"
+                      placeholder="Confirmation number, details, reminders..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={2}
+                      maxLength={1000}
+                    />
+                  </div>
 
-              <DialogFooter>
-                <Button type="submit" disabled={loading}>
-                  {loading
-                    ? "Saving..."
-                    : isEditing
-                    ? "Save Changes"
-                    : "Add Event"}
-                </Button>
-              </DialogFooter>
+                  <DialogFooter>
+                    <Button type="submit" disabled={loading}>
+                      {loading
+                        ? "Saving..."
+                        : isEditing
+                        ? "Save Changes"
+                        : "Add Event"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
             </>
           )}
         </form>

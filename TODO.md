@@ -57,6 +57,7 @@
 - [ ] Weather forecast integration for trip dates
 - [ ] Export itinerary as PDF
 - [ ] Dark mode toggle
+- [ ] Show local times with timezone on flight cards (based on airport timezone)
 
 ## Phase 4 - Advanced
 - [ ] AI-powered trip suggestions

@@ -17,8 +17,10 @@ import {
 } from "@/components/ui/dialog";
 import { EventFormDialog } from "./event-form-dialog";
 import { DriveDetailCard } from "./drive-detail-card";
+import { TrainDetailCard } from "./train-detail-card";
 import { RestaurantDetailCard } from "./restaurant-detail-card";
 import { HotelDetailCard } from "./hotel-detail-card";
+import { stations } from "@/data/stations";
 import {
   Plane,
   Hotel,
@@ -51,11 +53,23 @@ const subTypeIcons: Record<string, React.ElementType> = {
   drive: Car,
 };
 
+function resolveStationCity(code: string): string {
+  const station = stations.find((s) => s.code === code);
+  return station?.city || code;
+}
+
+function formatTrainLocation(location: string): string {
+  if (!location.includes("→")) return location;
+  const [dep, arr] = location.split("→").map((s) => s.trim());
+  return `${resolveStationCity(dep)} → ${resolveStationCity(arr)}`;
+}
+
 function isExpandable(event: TripEvent): boolean {
   return (
     event.type === "restaurant" ||
     event.type === "hotel" ||
-    (event.type === "travel" && event.sub_type === "drive")
+    (event.type === "travel" && event.sub_type === "drive") ||
+    (event.type === "travel" && event.sub_type === "train")
   );
 }
 
@@ -153,7 +167,11 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
                   ) : (
                     <span className="flex items-center gap-1 truncate">
                       <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{event.location}</span>
+                      <span className="truncate">
+                        {event.type === "travel" && event.sub_type === "train"
+                          ? formatTrainLocation(event.location)
+                          : event.location}
+                      </span>
                     </span>
                   )
                 )}
@@ -214,6 +232,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
         <div className="ml-12">
           {event.type === "travel" && event.sub_type === "drive" && (
             <DriveDetailCard event={event} />
+          )}
+          {event.type === "travel" && event.sub_type === "train" && (
+            <TrainDetailCard event={event} />
           )}
           {event.type === "restaurant" && (
             <RestaurantDetailCard event={event} />
