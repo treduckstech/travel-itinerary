@@ -53,12 +53,18 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   // Notify the requester if accepted
   if (status === "accepted") {
+    const userName =
+      (user.user_metadata?.full_name as string) ??
+      (user.user_metadata?.name as string) ??
+      user.email ??
+      "Someone";
+
     await serviceClient.from("notifications").insert({
       recipient_id: friendship.requester_id,
       actor_id: user.id,
       type: "friend_request_accepted",
       title: "Friend request accepted",
-      body: `${user.email} accepted your friend request`,
+      body: `${userName} accepted your friend request`,
       data: { friendship_id: id },
     });
   }

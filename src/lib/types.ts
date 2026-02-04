@@ -76,6 +76,7 @@ export interface Friendship {
   status: "pending" | "accepted" | "declined";
   created_at: string;
   updated_at: string;
+  name?: string;
   email?: string;
 }
 

@@ -1,19 +1,47 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Check, X, Trash2, Loader2, Clock, Users } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { UserPlus, Check, X, Trash2, Loader2, Clock, Users, Search, Mail } from "lucide-react";
 import { logActivity } from "@/lib/activity-log";
 import type { Friendship } from "@/lib/types";
 
+interface SearchResult {
+  id: string;
+  name: string;
+}
+
 export default function FriendsPage() {
   const [friendships, setFriendships] = useState<Friendship[]>([]);
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Invite state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   const fetchFriendships = useCallback(async () => {
     try {
@@ -31,7 +59,6 @@ export default function FriendsPage() {
 
   useEffect(() => {
     fetchFriendships();
-    // Get current user ID from Supabase
     import("@/lib/supabase/client").then(({ createClient }) => {
       const supabase = createClient();
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -40,23 +67,51 @@ export default function FriendsPage() {
     });
   }, [fetchFriendships]);
 
-  async function handleSendRequest(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setLoading(true);
+  // Debounced search
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
 
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/friends/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        if (res.ok) {
+          setSearchResults(await res.json());
+        }
+      } catch {
+        // Ignore
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, [searchQuery]);
+
+  async function handleSendRequest(userId: string, name: string) {
+    setLoading(true);
     try {
       const res = await fetch("/api/friends", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ user_id: userId }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setEmail("");
-        toast.success("Friend request sent");
-        logActivity("friend_request_sent", { email: email.trim() });
+        toast.success(`Friend request sent to ${name}`);
+        logActivity("friend_request_sent", { user_id: userId });
+        setSearchOpen(false);
+        setSearchQuery("");
+        setSearchResults([]);
         fetchFriendships();
       } else {
         toast.error(data.error || "Failed to send request");
@@ -65,6 +120,32 @@ export default function FriendsPage() {
       toast.error("Failed to send request");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+
+    try {
+      const res = await fetch("/api/friends/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
+
+      if (res.ok) {
+        toast.success("Invite sent");
+        setInviteEmail("");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to send invite");
+      }
+    } catch {
+      toast.error("Failed to send invite");
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -130,21 +211,78 @@ export default function FriendsPage() {
         <h1 className="font-display text-2xl font-bold">Friends</h1>
       </div>
 
-      {/* Send request */}
+      {/* Add a friend by name search */}
       <div className="space-y-3 mb-8">
         <h2 className="text-sm font-medium">Add a friend</h2>
-        <form onSubmit={handleSendRequest} className="flex gap-2">
+        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={searchOpen}
+              className="w-full justify-start text-muted-foreground font-normal"
+            >
+              <Search className="mr-2 h-4 w-4 shrink-0" />
+              Search by name...
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Type a name..."
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+              />
+              <CommandList>
+                {searching && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                {!searching && searchQuery.trim().length >= 2 && searchResults.length === 0 && (
+                  <CommandEmpty>No users found.</CommandEmpty>
+                )}
+                {searchResults.length > 0 && (
+                  <CommandGroup>
+                    {searchResults.map((result) => (
+                      <CommandItem
+                        key={result.id}
+                        onSelect={() => handleSendRequest(result.id, result.name)}
+                        disabled={loading}
+                      >
+                        <UserPlus className="mr-2 h-4 w-4 shrink-0" />
+                        {result.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Invite section */}
+      <div className="space-y-3 mb-8">
+        <h2 className="text-sm font-medium flex items-center gap-1.5">
+          <Mail className="h-3.5 w-3.5" />
+          Invite a friend
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Know someone who should join? Invite them by email.
+        </p>
+        <form onSubmit={handleInvite} className="flex gap-2">
           <Input
             type="email"
             placeholder="friend@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
           />
-          <Button type="submit" size="sm" disabled={loading || !email.trim()}>
-            {loading ? (
+          <Button type="submit" size="sm" disabled={inviting || !inviteEmail.trim()}>
+            {inviting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <UserPlus className="h-4 w-4" />
+              "Send Invite"
             )}
           </Button>
         </form>
@@ -166,7 +304,10 @@ export default function FriendsPage() {
                     key={f.id}
                     className="flex items-center justify-between rounded-md border px-3 py-2"
                   >
-                    <span className="text-sm">{f.email}</span>
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium">{f.name ?? "Unknown"}</span>
+                      <p className="text-xs text-muted-foreground truncate">{f.email}</p>
+                    </div>
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -199,9 +340,12 @@ export default function FriendsPage() {
                     key={f.id}
                     className="flex items-center justify-between rounded-md border px-3 py-2"
                   >
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      {f.email}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium">{f.name ?? "Unknown"}</span>
+                        <p className="text-xs text-muted-foreground truncate">{f.email}</p>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -223,7 +367,7 @@ export default function FriendsPage() {
             </h2>
             {accepted.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No friends yet. Send a request to get started.
+                No friends yet. Search for someone to get started.
               </p>
             ) : (
               <div className="space-y-2">
@@ -232,7 +376,10 @@ export default function FriendsPage() {
                     key={f.id}
                     className="flex items-center justify-between rounded-md border px-3 py-2"
                   >
-                    <span className="text-sm">{f.email}</span>
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium">{f.name ?? "Unknown"}</span>
+                      <p className="text-xs text-muted-foreground truncate">{f.email}</p>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"

@@ -64,18 +64,30 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { email } = await request.json();
-  if (!email || typeof email !== "string") {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  const body = await request.json();
+  const { email, user_id } = body;
+
+  if ((!email || typeof email !== "string") && (!user_id || typeof user_id !== "string")) {
+    return NextResponse.json({ error: "Email or user_id is required" }, { status: 400 });
   }
 
-  const normalizedEmail = email.toLowerCase().trim();
-
-  // Look up user by email using service client (bypasses RLS on auth.users)
+  // Look up user using service client (bypasses RLS on auth.users)
   const { data: userData } = await serviceClient.auth.admin.listUsers();
-  const matchedUser = userData?.users?.find(
-    (u) => u.email?.toLowerCase() === normalizedEmail
-  );
+  let matchedUser;
+  let normalizedEmail: string;
+
+  if (user_id) {
+    matchedUser = userData?.users?.find((u) => u.id === user_id);
+    if (!matchedUser?.email) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    normalizedEmail = matchedUser.email.toLowerCase();
+  } else {
+    normalizedEmail = email.toLowerCase().trim();
+    matchedUser = userData?.users?.find(
+      (u) => u.email?.toLowerCase() === normalizedEmail
+    );
+  }
 
   const { data: share, error } = await supabase.from("trip_shares").insert({
     trip_id: id,

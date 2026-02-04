@@ -33,6 +33,7 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [sharingFriendId, setSharingFriendId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -49,8 +50,12 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
           setFriends(data.filter((f) => f.status === "accepted"));
         })
         .finally(() => setFriendsLoading(false));
+
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) setCurrentUserId(user.id);
+      });
     }
-  }, [open, tripId]);
+  }, [open, tripId, supabase.auth]);
 
   async function fetchShares() {
     const res = await fetch(`/api/trips/${tripId}/shares`);
@@ -134,17 +139,17 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
     setTokenLoading(false);
   }
 
-  async function handleShareWithFriend(friendEmail: string, friendshipId: string) {
+  async function handleShareWithFriend(friendId: string, friendName: string, friendshipId: string) {
     setSharingFriendId(friendshipId);
     const res = await fetch(`/api/trips/${tripId}/shares`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: friendEmail }),
+      body: JSON.stringify({ user_id: friendId }),
     });
 
     if (res.ok) {
-      toast.success(`Shared with ${friendEmail}`);
-      logActivity("share_created", { trip_id: tripId, shared_with: friendEmail });
+      toast.success(`Shared with ${friendName}`);
+      logActivity("share_created", { trip_id: tripId, shared_with: friendId });
       fetchShares();
     } else {
       const data = await res.json();
@@ -193,8 +198,12 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {friends.map((friend) => {
+                    const friendUserId =
+                      friend.requester_id === currentUserId
+                        ? friend.addressee_id
+                        : friend.requester_id;
                     const alreadyShared = shares.some(
-                      (s) => s.shared_with_email === friend.email
+                      (s) => s.shared_with_user_id === friendUserId
                     );
                     return (
                       <Button
@@ -203,13 +212,13 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
                         size="sm"
                         disabled={alreadyShared || sharingFriendId === friend.id}
                         onClick={() =>
-                          friend.email && handleShareWithFriend(friend.email, friend.id)
+                          handleShareWithFriend(friendUserId, friend.name ?? "Friend", friend.id)
                         }
                       >
                         {sharingFriendId === friend.id ? (
                           <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                         ) : null}
-                        {friend.email}
+                        {friend.name ?? friend.email}
                         {alreadyShared && " (shared)"}
                       </Button>
                     );
