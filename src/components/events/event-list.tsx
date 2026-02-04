@@ -82,59 +82,102 @@ export function EventList({ events, readOnly }: EventListProps) {
     return { hotel, startRow, endRow };
   });
 
+  // Build a set of dates covered by any hotel (for rendering date labels in column 2)
+  const hotelCoveredDates = new Set<string>();
+  hotelEvents.forEach((hotel) => {
+    const start = parseISO(hotel.start_datetime);
+    const end = parseISO(hotel.end_datetime!);
+    eachDayOfInterval({ start, end }).forEach((day) => {
+      hotelCoveredDates.add(format(day, "yyyy-MM-dd"));
+    });
+  });
+
   const hasHotels = hotelPositions.length > 0;
 
   return (
     <>
-      {/* Desktop: two-column grid layout */}
+      {/* Desktop: three-column grid layout */}
       <div
         className={`hidden ${hasHotels ? "md:grid" : ""}`}
         style={{
-          gridTemplateColumns: "3fr 2fr",
+          gridTemplateColumns: "3fr auto 2fr",
           gridTemplateRows: `repeat(${sortedDates.length}, auto)`,
-          gap: "0 24px",
         }}
       >
-        {/* Left column: day sections */}
+        {/* Full-width date header lines (behind everything) */}
         {sortedDates.map((dateKey) => {
           const row = dateToRow.get(dateKey)!;
           return (
             <div
-              key={dateKey}
-              style={{ gridColumn: 1, gridRow: row }}
-              className="pb-10"
+              key={`header-${dateKey}`}
+              style={{ gridColumn: "1 / -1", gridRow: row }}
+              className="pointer-events-none relative z-0 flex items-start"
             >
-              <div className="mb-4 flex items-center gap-3">
+              <div className="flex w-full items-center gap-3">
                 <div className="h-px flex-1 bg-border" />
                 <h3 className="shrink-0 font-display text-lg text-foreground/70">
                   {format(parseISO(dateKey), "EEEE, MMMM d")}
                 </h3>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="space-y-3">
-                {(grouped[dateKey] ?? [])
-                  .sort(
-                    (a, b) =>
-                      new Date(a.start_datetime).getTime() -
-                      new Date(b.start_datetime).getTime()
-                  )
-                  .map((event) => (
-                    <EventCard key={event.id} event={event} readOnly={readOnly} />
-                  ))}
-              </div>
             </div>
           );
         })}
 
-        {/* Right column: spanning hotel cards */}
+        {/* Left column: day events */}
+        {sortedDates.map((dateKey) => {
+          const row = dateToRow.get(dateKey)!;
+          const dateEvents = grouped[dateKey] ?? [];
+          return (
+            <div
+              key={`events-${dateKey}`}
+              style={{ gridColumn: 1, gridRow: row }}
+              className="relative z-10 min-h-16 pb-4 pt-8"
+            >
+              {dateEvents.length > 0 && (
+                <div className="space-y-3">
+                  {dateEvents
+                    .sort(
+                      (a, b) =>
+                        new Date(a.start_datetime).getTime() -
+                        new Date(b.start_datetime).getTime()
+                    )
+                    .map((event) => (
+                      <EventCard key={event.id} event={event} readOnly={readOnly} />
+                    ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Date labels next to hotel cards (column 2) */}
+        {sortedDates
+          .filter((dateKey) => hotelCoveredDates.has(dateKey))
+          .map((dateKey) => {
+            const row = dateToRow.get(dateKey)!;
+            return (
+              <div
+                key={`label-${dateKey}`}
+                style={{ gridColumn: 2, gridRow: row }}
+                className="relative z-10 flex items-start px-3 pt-0.5"
+              >
+                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                  {format(parseISO(dateKey), "MMM d")}
+                </span>
+              </div>
+            );
+          })}
+
+        {/* Right column: spanning hotel cards (column 3) */}
         {hotelPositions.map(({ hotel, startRow, endRow }) => (
           <div
             key={hotel.id}
             style={{
-              gridColumn: 2,
+              gridColumn: 3,
               gridRow: `${startRow} / ${endRow}`,
             }}
-            className="pt-12 pb-10"
+            className="relative z-10 pb-4 pt-8"
           >
             <div className="h-full">
               <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight />
