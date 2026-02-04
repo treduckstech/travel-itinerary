@@ -46,9 +46,9 @@ export function ActivityLogFilters({
   onEndDateChange,
 }: ActivityLogFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
       <Select value={actionType} onValueChange={onActionTypeChange}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="sm:w-[180px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -66,7 +66,7 @@ export function ActivityLogFilters({
           placeholder="Filter by email..."
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
-          className="w-[200px] pl-9"
+          className="sm:w-[200px] pl-9"
         />
       </div>
 
@@ -74,7 +74,7 @@ export function ActivityLogFilters({
         type="date"
         value={startDate}
         onChange={(e) => onStartDateChange(e.target.value)}
-        className="w-[150px]"
+        className="sm:w-[150px]"
         placeholder="Start date"
       />
 
@@ -82,7 +82,7 @@ export function ActivityLogFilters({
         type="date"
         value={endDate}
         onChange={(e) => onEndDateChange(e.target.value)}
-        className="w-[150px]"
+        className="sm:w-[150px]"
         placeholder="End date"
       />
     </div>

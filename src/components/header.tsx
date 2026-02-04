@@ -23,7 +23,8 @@ export async function Header() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Plane className="h-4 w-4" />
           </div>
-          <span className="font-display text-lg">Travel Itinerary</span>
+          <span className="font-display text-lg hidden sm:inline">Travel Itinerary</span>
+          <span className="font-display text-lg sm:hidden">Trips</span>
         </Link>
         {user && (
           <div className="flex items-center gap-3">

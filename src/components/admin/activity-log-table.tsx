@@ -74,10 +74,11 @@ function DetailsCell({ details }: { details: Record<string, unknown> }) {
   );
 }
 
-export function ActivityLogTable({ logs, loading }: ActivityLogTableProps) {
-  if (loading) {
-    return (
-      <div className="rounded-xl border bg-card">
+function LoadingSkeleton() {
+  return (
+    <>
+      {/* Desktop skeleton */}
+      <div className="hidden sm:block rounded-xl border bg-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
@@ -101,49 +102,87 @@ export function ActivityLogTable({ logs, loading }: ActivityLogTableProps) {
           </tbody>
         </table>
       </div>
-    );
+      {/* Mobile skeleton */}
+      <div className="sm:hidden space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card p-4">
+            <div className="h-4 w-32 animate-pulse rounded bg-muted mb-2" />
+            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export function ActivityLogTable({ logs, loading }: ActivityLogTableProps) {
+  if (loading) {
+    return <LoadingSkeleton />;
   }
 
   return (
-    <div className="rounded-xl border bg-card">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="px-4 py-3 font-medium">Time</th>
-            <th className="px-4 py-3 font-medium">User</th>
-            <th className="px-4 py-3 font-medium">Action</th>
-            <th className="px-4 py-3 font-medium">Details</th>
-            <th className="px-4 py-3 font-medium">IP</th>
-          </tr>
-        </thead>
-        <tbody>
-          {logs.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                No activity logs found
-              </td>
+    <>
+      {/* Desktop table */}
+      <div className="hidden sm:block rounded-xl border bg-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th className="px-4 py-3 font-medium">Time</th>
+              <th className="px-4 py-3 font-medium">User</th>
+              <th className="px-4 py-3 font-medium">Action</th>
+              <th className="px-4 py-3 font-medium">Details</th>
+              <th className="px-4 py-3 font-medium">IP</th>
             </tr>
-          ) : (
-            logs.map((log) => (
-              <tr key={log.id} className="border-b last:border-0">
-                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                  {new Date(log.created_at).toLocaleString()}
-                </td>
-                <td className="px-4 py-3">{log.user_email ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <ActionBadge type={log.action_type} />
-                </td>
-                <td className="px-4 py-3 max-w-[200px]">
-                  <DetailsCell details={log.action_details ?? {}} />
-                </td>
-                <td className="px-4 py-3 text-muted-foreground text-xs">
-                  {log.ip_address ?? "—"}
+          </thead>
+          <tbody>
+            {logs.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  No activity logs found
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+            ) : (
+              logs.map((log) => (
+                <tr key={log.id} className="border-b last:border-0">
+                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                    {new Date(log.created_at).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3">{log.user_email ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <ActionBadge type={log.action_type} />
+                  </td>
+                  <td className="px-4 py-3 max-w-[200px]">
+                    <DetailsCell details={log.action_details ?? {}} />
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    {log.ip_address ?? "—"}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="sm:hidden space-y-3">
+        {logs.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground">No activity logs found</p>
+        ) : (
+          logs.map((log) => (
+            <div key={log.id} className="rounded-xl border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <ActionBadge type={log.action_type} />
+                <span className="text-xs text-muted-foreground">
+                  {new Date(log.created_at).toLocaleString()}
+                </span>
+              </div>
+              <p className="text-sm truncate">{log.user_email ?? "—"}</p>
+              <DetailsCell details={log.action_details ?? {}} />
+            </div>
+          ))
+        )}
+      </div>
+    </>
   );
 }

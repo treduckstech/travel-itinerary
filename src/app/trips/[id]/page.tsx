@@ -74,7 +74,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </span>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isOwner && (
             <>
               <ShareDialog tripId={id} shareToken={typedTrip.share_token} />
@@ -91,12 +91,12 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
       </div>
 
       <Tabs defaultValue="itinerary">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <TabsList>
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="todos">
-              Prep List ({typedTodos.length})
+              Prep ({typedTodos.length})
             </TabsTrigger>
           </TabsList>
           <EventFormDialog tripId={id} />

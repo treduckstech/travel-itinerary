@@ -498,7 +498,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Type</Label>
               <Select
@@ -599,7 +599,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
           {isFlightLookupMode && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dep-airport">Departure Airport</Label>
                   <AirportCombobox
@@ -666,7 +666,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
               {type === "travel" && subType === "train" ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>From</Label>
                       <StationCombobox
@@ -685,7 +685,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Departure Timezone</Label>
                       <TimezoneCombobox
@@ -704,7 +704,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="train-departure">Departure</Label>
                       <Input
@@ -737,7 +737,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="train-operator">Operator</Label>
                       <Select value={trainOperator} onValueChange={setTrainOperator}>
@@ -767,7 +767,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="train-coach">Coach</Label>
                       <Input
@@ -814,7 +814,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </>
               ) : type === "travel" && subType === "drive" ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Origin</Label>
                       <PlaceSearch
@@ -857,7 +857,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Departure Timezone</Label>
                       <TimezoneCombobox
@@ -907,7 +907,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </>
               ) : (
                 <>
-                  <div className={type === "restaurant" ? "" : "grid grid-cols-2 gap-4"}>
+                  <div className={type === "restaurant" ? "" : "grid grid-cols-1 sm:grid-cols-2 gap-4"}>
                     <div className="space-y-2">
                       <Label htmlFor="event-start">
                         {type === "travel" && (subType === "flight" || subType === "ferry")
@@ -954,7 +954,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
               {type === "travel" && subType === "flight" ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>From</Label>
                       <AirportCombobox
@@ -972,7 +972,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Departure Timezone</Label>
                       <TimezoneCombobox
@@ -993,7 +993,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </>
               ) : type === "travel" && subType === "ferry" ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>From</Label>
                       <StationCombobox
@@ -1011,7 +1011,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Departure Timezone</Label>
                       <TimezoneCombobox

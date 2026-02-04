@@ -70,20 +70,20 @@ export function TrainDetailCard({ event }: { event: TripEvent }) {
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
       {route && (
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 text-sm">
           <div className="text-right min-w-0 flex-1">
-            <p className="font-medium truncate">
+            <p className="font-medium truncate text-xs sm:text-sm">
               {route.depStation?.city || route.depCode}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground truncate hidden sm:block">
               {route.depStation?.name || route.depCode}
             </p>
           </div>
           <div className="flex flex-col items-center shrink-0">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <div className="h-px w-6 bg-border" />
+            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+              <div className="h-px w-4 sm:w-6 bg-border" />
               <TrainFront className="h-3.5 w-3.5" />
-              <div className="h-px w-6 bg-border" />
+              <div className="h-px w-4 sm:w-6 bg-border" />
             </div>
             {duration && (
               <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -93,10 +93,10 @@ export function TrainDetailCard({ event }: { event: TripEvent }) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate">
+            <p className="font-medium truncate text-xs sm:text-sm">
               {route.arrStation?.city || route.arrCode}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground truncate hidden sm:block">
               {route.arrStation?.name || route.arrCode}
             </p>
           </div>

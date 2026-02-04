@@ -78,11 +78,11 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
           <>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-green-600" />
-              <span className="truncate max-w-[200px]">{addresses.origin}</span>
+              <span className="truncate max-w-[150px] sm:max-w-[200px]">{addresses.origin}</span>
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-red-600" />
-              <span className="truncate max-w-[200px]">{addresses.destination}</span>
+              <span className="truncate max-w-[150px] sm:max-w-[200px]">{addresses.destination}</span>
             </span>
           </>
         )}

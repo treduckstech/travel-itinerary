@@ -43,7 +43,8 @@ export default function AdminUsersPage() {
         />
       </div>
 
-      <div className="rounded-xl border bg-card">
+      {/* Desktop table */}
+      <div className="hidden sm:block rounded-xl border bg-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
@@ -101,6 +102,40 @@ export default function AdminUsersPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-4">
+              <div className="h-4 w-40 animate-pulse rounded bg-muted mb-2" />
+              <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            </div>
+          ))
+        ) : users.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground">No users found</p>
+        ) : (
+          users.map((u) => (
+            <Link
+              key={u.id}
+              href={`/admin/users/${u.id}`}
+              className="block rounded-xl border bg-card p-4 hover:bg-accent/30 transition-colors"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary shrink-0">
+                  {u.email?.[0]?.toUpperCase() ?? "?"}
+                </div>
+                <span className="text-sm font-medium truncate">{u.email}</span>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground ml-11">
+                <span>{u.trip_count} trips</span>
+                <span>{u.event_count} events</span>
+                <span>{new Date(u.created_at).toLocaleDateString()}</span>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
