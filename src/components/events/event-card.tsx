@@ -59,7 +59,7 @@ function isExpandable(event: TripEvent): boolean {
   );
 }
 
-export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: boolean }) {
+export function EventCard({ event, readOnly, showDateRange }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -105,6 +105,11 @@ export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: bo
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate font-semibold leading-tight">{event.title}</p>
+              {showDateRange && event.end_datetime && (
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {format(new Date(event.start_datetime), "MMM d")} &ndash; {format(new Date(event.end_datetime), "MMM d")}
+                </p>
+              )}
               <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
                 {event.type !== "hotel" && (
                   <span className="flex items-center gap-1">

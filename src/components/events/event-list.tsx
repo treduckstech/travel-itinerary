@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { EventCard } from "./event-card";
 import { Route, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
@@ -14,6 +14,11 @@ const eventHints = [
   { icon: UtensilsCrossed, label: "Restaurants", color: "bg-event-restaurant-bg text-event-restaurant" },
   { icon: MapPin, label: "Activities", color: "bg-event-activity-bg text-event-activity" },
 ];
+
+function isMultiDayHotel(event: TripEvent): boolean {
+  if (event.type !== "hotel" || !event.end_datetime) return false;
+  return !isSameDay(parseISO(event.start_datetime), parseISO(event.end_datetime));
+}
 
 export function EventList({ events, readOnly }: EventListProps) {
   if (events.length === 0) {
@@ -37,40 +42,134 @@ export function EventList({ events, readOnly }: EventListProps) {
     );
   }
 
-  // Group events by date
-  const grouped = events.reduce<Record<string, TripEvent[]>>((acc, event) => {
+  // Separate multi-day hotels from day events
+  const hotelEvents = events.filter(isMultiDayHotel);
+  const dayEvents = events.filter((e) => !isMultiDayHotel(e));
+
+  // Collect all dates: from day events + all days covered by hotels
+  const dateSet = new Set<string>();
+
+  dayEvents.forEach((event) => {
+    dateSet.add(format(parseISO(event.start_datetime), "yyyy-MM-dd"));
+  });
+
+  hotelEvents.forEach((hotel) => {
+    const start = parseISO(hotel.start_datetime);
+    const end = parseISO(hotel.end_datetime!);
+    eachDayOfInterval({ start, end }).forEach((day) => {
+      dateSet.add(format(day, "yyyy-MM-dd"));
+    });
+  });
+
+  const sortedDates = Array.from(dateSet).sort();
+  const dateToRow = new Map(sortedDates.map((d, i) => [d, i + 1])); // 1-based for grid rows
+
+  // Group day events by date
+  const grouped = dayEvents.reduce<Record<string, TripEvent[]>>((acc, event) => {
     const dateKey = format(parseISO(event.start_datetime), "yyyy-MM-dd");
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(event);
     return acc;
   }, {});
 
-  const sortedDates = Object.keys(grouped).sort();
+  // Compute hotel grid positions
+  const hotelPositions = hotelEvents.map((hotel) => {
+    const startKey = format(parseISO(hotel.start_datetime), "yyyy-MM-dd");
+    const endKey = format(parseISO(hotel.end_datetime!), "yyyy-MM-dd");
+    const startRow = dateToRow.get(startKey) ?? 1;
+    // End row is exclusive in CSS grid, so we add 1 to include the checkout day row
+    const endRow = (dateToRow.get(endKey) ?? startRow) + 1;
+    return { hotel, startRow, endRow };
+  });
+
+  const hasHotels = hotelPositions.length > 0;
 
   return (
-    <div className="space-y-10">
-      {sortedDates.map((dateKey) => (
-        <div key={dateKey}>
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <h3 className="shrink-0 font-display text-lg text-foreground/70">
-              {format(parseISO(dateKey), "EEEE, MMMM d")}
-            </h3>
-            <div className="h-px flex-1 bg-border" />
+    <>
+      {/* Desktop: two-column grid layout */}
+      <div
+        className={`hidden ${hasHotels ? "md:grid" : ""}`}
+        style={{
+          gridTemplateColumns: "1fr 280px",
+          gridTemplateRows: `repeat(${sortedDates.length}, auto)`,
+          gap: "0 24px",
+        }}
+      >
+        {/* Left column: day sections */}
+        {sortedDates.map((dateKey) => {
+          const row = dateToRow.get(dateKey)!;
+          return (
+            <div
+              key={dateKey}
+              style={{ gridColumn: 1, gridRow: row }}
+              className="pb-10"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <h3 className="shrink-0 font-display text-lg text-foreground/70">
+                  {format(parseISO(dateKey), "EEEE, MMMM d")}
+                </h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="space-y-3">
+                {(grouped[dateKey] ?? [])
+                  .sort(
+                    (a, b) =>
+                      new Date(a.start_datetime).getTime() -
+                      new Date(b.start_datetime).getTime()
+                  )
+                  .map((event) => (
+                    <EventCard key={event.id} event={event} readOnly={readOnly} />
+                  ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Right column: spanning hotel cards */}
+        {hotelPositions.map(({ hotel, startRow, endRow }) => (
+          <div
+            key={hotel.id}
+            style={{
+              gridColumn: 2,
+              gridRow: `${startRow} / ${endRow}`,
+            }}
+            className="pt-12"
+          >
+            <div className="sticky top-4">
+              <EventCard event={hotel} readOnly={readOnly} showDateRange />
+            </div>
           </div>
-          <div className="space-y-3">
-            {grouped[dateKey]
-              .sort(
-                (a, b) =>
-                  new Date(a.start_datetime).getTime() -
-                  new Date(b.start_datetime).getTime()
-              )
-              .map((event) => (
-                <EventCard key={event.id} event={event} readOnly={readOnly} />
-              ))}
+        ))}
+      </div>
+
+      {/* Mobile: single column (original layout), also used when no multi-day hotels */}
+      <div className={`space-y-10 ${hasHotels ? "md:hidden" : ""}`}>
+        {sortedDates.map((dateKey) => (
+          <div key={dateKey}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <h3 className="shrink-0 font-display text-lg text-foreground/70">
+                {format(parseISO(dateKey), "EEEE, MMMM d")}
+              </h3>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-3">
+              {[...(grouped[dateKey] ?? []), ...hotelEvents.filter((h) =>
+                format(parseISO(h.start_datetime), "yyyy-MM-dd") === dateKey
+              )]
+                .sort(
+                  (a, b) =>
+                    new Date(a.start_datetime).getTime() -
+                    new Date(b.start_datetime).getTime()
+                )
+                .map((event) => (
+                  <EventCard key={event.id} event={event} readOnly={readOnly} />
+                ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
