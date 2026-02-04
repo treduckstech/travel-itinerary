@@ -31,6 +31,8 @@ import { StationCombobox } from "@/components/events/station-combobox";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
 import { HotelSearch } from "@/components/events/hotel-search";
 import { PlaceSearch } from "@/components/events/place-search";
+import { TimezoneCombobox } from "@/components/events/timezone-combobox";
+import { parseTimezone, buildTimezone, getBrowserTimezone, naiveToUtc, utcToNaive } from "@/lib/timezone";
 
 interface EventFormDialogProps {
   tripId: string;
@@ -46,11 +48,25 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [title, setTitle] = useState(event?.title ?? "");
   const [startDatetime, setStartDatetime] = useState(() => {
     if (!event?.start_datetime) return "";
+    if (event.timezone) {
+      const tz = parseTimezone(event.timezone);
+      if (tz.start) {
+        const naive = utcToNaive(event.start_datetime, tz.start);
+        return event.type === "hotel" ? naive.slice(0, 10) : naive;
+      }
+    }
     const iso = new Date(event.start_datetime).toISOString();
     return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
   });
   const [endDatetime, setEndDatetime] = useState(() => {
     if (!event?.end_datetime) return "";
+    if (event.timezone) {
+      const tz = parseTimezone(event.timezone);
+      if (tz.end) {
+        const naive = utcToNaive(event.end_datetime, tz.end);
+        return event.type === "hotel" ? naive.slice(0, 10) : naive;
+      }
+    }
     const iso = new Date(event.end_datetime).toISOString();
     return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
   });
@@ -138,6 +154,18 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     return "";
   });
+  const [startTimezone, setStartTimezone] = useState(() => {
+    if (event?.timezone) {
+      return parseTimezone(event.timezone).start || getBrowserTimezone();
+    }
+    return getBrowserTimezone();
+  });
+  const [endTimezone, setEndTimezone] = useState(() => {
+    if (event?.timezone) {
+      return parseTimezone(event.timezone).end || getBrowserTimezone();
+    }
+    return getBrowserTimezone();
+  });
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
@@ -172,6 +200,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setTrainClass("");
       setTrainCoach("");
       setTrainSeat("");
+      setStartTimezone(getBrowserTimezone());
+      setEndTimezone(getBrowserTimezone());
     }
     setError(null);
   }
@@ -311,19 +341,25 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       }
     }
 
+    const isDualTz = type === "travel";
+    const tzValue = isDualTz
+      ? buildTimezone(startTimezone, endTimezone)
+      : buildTimezone(startTimezone);
+
     const eventData = {
       trip_id: tripId,
       type,
       sub_type: type === "travel" ? subType : null,
       title: finalTitle,
       description: finalDescription,
-      start_datetime: new Date(startDatetime).toISOString(),
+      start_datetime: naiveToUtc(startDatetime, startTimezone),
       end_datetime: endDatetime
-        ? new Date(endDatetime).toISOString()
+        ? naiveToUtc(endDatetime, isDualTz ? endTimezone : startTimezone)
         : null,
       location: type === "travel" ? getTravelLocation() : (location || null),
       confirmation_number: confirmationNumber || null,
       notes: notes || null,
+      timezone: tzValue,
     };
 
     if (isEditing) {
@@ -651,6 +687,25 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
+                      <Label>Departure Timezone</Label>
+                      <TimezoneCombobox
+                        value={startTimezone}
+                        onSelect={setStartTimezone}
+                        placeholder="Departure timezone"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Arrival Timezone</Label>
+                      <TimezoneCombobox
+                        value={endTimezone}
+                        onSelect={setEndTimezone}
+                        placeholder="Arrival timezone"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <Label htmlFor="train-departure">Departure</Label>
                       <Input
                         id="train-departure"
@@ -802,6 +857,25 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Departure Timezone</Label>
+                      <TimezoneCombobox
+                        value={startTimezone}
+                        onSelect={setStartTimezone}
+                        placeholder="Departure timezone"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Arrival Timezone</Label>
+                      <TimezoneCombobox
+                        value={endTimezone}
+                        onSelect={setEndTimezone}
+                        placeholder="Arrival timezone"
+                      />
+                    </div>
+                  </div>
+
                   {driveLoading && (
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -879,43 +953,83 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               )}
 
               {type === "travel" && subType === "flight" ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>From</Label>
-                    <AirportCombobox
-                      value={depAirport}
-                      onSelect={setDepAirport}
-                      placeholder="Departure"
-                    />
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>From</Label>
+                      <AirportCombobox
+                        value={depAirport}
+                        onSelect={setDepAirport}
+                        placeholder="Departure"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>To</Label>
+                      <AirportCombobox
+                        value={arrAirport}
+                        onSelect={setArrAirport}
+                        placeholder="Arrival"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>To</Label>
-                    <AirportCombobox
-                      value={arrAirport}
-                      onSelect={setArrAirport}
-                      placeholder="Arrival"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Departure Timezone</Label>
+                      <TimezoneCombobox
+                        value={startTimezone}
+                        onSelect={setStartTimezone}
+                        placeholder="Departure timezone"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Arrival Timezone</Label>
+                      <TimezoneCombobox
+                        value={endTimezone}
+                        onSelect={setEndTimezone}
+                        placeholder="Arrival timezone"
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               ) : type === "travel" && subType === "ferry" ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>From</Label>
-                    <StationCombobox
-                      value={depStation}
-                      onSelect={setDepStation}
-                      placeholder="Departure"
-                    />
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>From</Label>
+                      <StationCombobox
+                        value={depStation}
+                        onSelect={setDepStation}
+                        placeholder="Departure"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>To</Label>
+                      <StationCombobox
+                        value={arrStation}
+                        onSelect={setArrStation}
+                        placeholder="Arrival"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>To</Label>
-                    <StationCombobox
-                      value={arrStation}
-                      onSelect={setArrStation}
-                      placeholder="Arrival"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Departure Timezone</Label>
+                      <TimezoneCombobox
+                        value={startTimezone}
+                        onSelect={setStartTimezone}
+                        placeholder="Departure timezone"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Arrival Timezone</Label>
+                      <TimezoneCombobox
+                        value={endTimezone}
+                        onSelect={setEndTimezone}
+                        placeholder="Arrival timezone"
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               ) : type !== "travel" ? (
                 <div className="space-y-2">
                   <Label htmlFor="event-location">Location</Label>
@@ -939,6 +1053,20 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                   )}
                 </div>
               ) : null}
+
+              {type !== "travel" && (
+                <div className="space-y-2">
+                  <Label>Timezone</Label>
+                  <TimezoneCombobox
+                    value={startTimezone}
+                    onSelect={(iana) => {
+                      setStartTimezone(iana);
+                      setEndTimezone(iana);
+                    }}
+                    placeholder="Select timezone"
+                  />
+                </div>
+              )}
 
               {!(type === "travel" && subType === "train") && (
                 <>

@@ -2,6 +2,7 @@ import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { EventCard } from "./event-card";
 import { Route, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
+import { parseTimezone, utcToNaiveDate } from "@/lib/timezone";
 
 interface EventListProps {
   events: TripEvent[];
@@ -50,7 +51,11 @@ export function EventList({ events, readOnly }: EventListProps) {
   const dateSet = new Set<string>();
 
   dayEvents.forEach((event) => {
-    dateSet.add(format(parseISO(event.start_datetime), "yyyy-MM-dd"));
+    const tz = parseTimezone(event.timezone);
+    const dateKey = tz.start
+      ? utcToNaiveDate(event.start_datetime, tz.start)
+      : format(parseISO(event.start_datetime), "yyyy-MM-dd");
+    dateSet.add(dateKey);
   });
 
   hotelEvents.forEach((hotel) => {
@@ -66,7 +71,10 @@ export function EventList({ events, readOnly }: EventListProps) {
 
   // Group day events by date
   const grouped = dayEvents.reduce<Record<string, TripEvent[]>>((acc, event) => {
-    const dateKey = format(parseISO(event.start_datetime), "yyyy-MM-dd");
+    const tz = parseTimezone(event.timezone);
+    const dateKey = tz.start
+      ? utcToNaiveDate(event.start_datetime, tz.start)
+      : format(parseISO(event.start_datetime), "yyyy-MM-dd");
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(event);
     return acc;

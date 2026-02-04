@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
+import { parseTimezone, formatInTimezone } from "@/lib/timezone";
 
 const typeConfig: Record<
   EventType,
@@ -147,9 +148,24 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
                 {event.type !== "hotel" && (
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {format(new Date(event.start_datetime), "h:mm a")}
-                    {event.end_datetime &&
-                      ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
+                    {(() => {
+                      const tz = parseTimezone(event.timezone);
+                      if (tz.start) {
+                        const startStr = formatInTimezone(event.start_datetime, tz.start);
+                        if (event.end_datetime) {
+                          const endStr = formatInTimezone(event.end_datetime, tz.end || tz.start);
+                          return `${startStr} – ${endStr}`;
+                        }
+                        return startStr;
+                      }
+                      return (
+                        <>
+                          {format(new Date(event.start_datetime), "h:mm a")}
+                          {event.end_datetime &&
+                            ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
+                        </>
+                      );
+                    })()}
                   </span>
                 )}
                 {event.location && (

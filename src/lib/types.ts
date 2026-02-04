@@ -34,6 +34,7 @@ export interface TripEvent {
   location: string | null;
   confirmation_number: string | null;
   notes: string | null;
+  timezone: string | null;
   created_at: string;
 }
 

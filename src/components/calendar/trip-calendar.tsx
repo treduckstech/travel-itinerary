@@ -17,6 +17,7 @@ import {
   Car,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
+import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
 
 const typeIcons: Record<EventType, React.ElementType> = {
   travel: Plane,
@@ -68,7 +69,10 @@ export function TripCalendar({
   const dayGroups = useMemo<DayGroup[]>(() => {
     const grouped = new Map<string, TripEvent[]>();
     for (const event of events) {
-      const key = format(parseISO(event.start_datetime), "yyyy-MM-dd");
+      const tz = parseTimezone(event.timezone);
+      const key = tz.start
+        ? utcToNaiveDate(event.start_datetime, tz.start)
+        : format(parseISO(event.start_datetime), "yyyy-MM-dd");
       const group = grouped.get(key);
       if (group) {
         group.push(event);
@@ -167,15 +171,24 @@ export function TripCalendar({
                             {event.type !== "hotel" && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Clock className="h-3 w-3 shrink-0" />
-                                {format(
-                                  parseISO(event.start_datetime),
-                                  "h:mm a"
-                                )}
-                                {event.end_datetime &&
-                                  ` – ${format(
-                                    parseISO(event.end_datetime),
-                                    "h:mm a"
-                                  )}`}
+                                {(() => {
+                                  const tz = parseTimezone(event.timezone);
+                                  if (tz.start) {
+                                    const startStr = formatInTimezone(event.start_datetime, tz.start);
+                                    if (event.end_datetime) {
+                                      const endStr = formatInTimezone(event.end_datetime, tz.end || tz.start);
+                                      return `${startStr} – ${endStr}`;
+                                    }
+                                    return startStr;
+                                  }
+                                  return (
+                                    <>
+                                      {format(parseISO(event.start_datetime), "h:mm a")}
+                                      {event.end_datetime &&
+                                        ` – ${format(parseISO(event.end_datetime), "h:mm a")}`}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             )}
                             {event.location && (

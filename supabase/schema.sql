@@ -30,6 +30,7 @@ create table if not exists events (
   location text,
   confirmation_number text,
   notes text,
+  timezone text,
   created_at timestamptz default now() not null
 );
 

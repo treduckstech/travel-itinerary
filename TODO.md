@@ -64,7 +64,7 @@
 - [ ] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)
 
 ## Phase 3 - Enhancements
-- [ ] Show local times with timezone on flight cards (based on airport timezone)
+- [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)
 - [ ] Drag-and-drop event reordering
 - [ ] File/document attachments (boarding passes, confirmations)
 - [ ] Interactive map view (show event locations on a map)
