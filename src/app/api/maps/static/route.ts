@@ -48,23 +48,22 @@ export async function GET(req: NextRequest) {
   try {
     const imageRes = await fetch(staticUrl);
     if (!imageRes.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch map image" },
-        { status: 502 }
-      );
+      return new NextResponse(null, { status: 502 });
+    }
+
+    const contentType = imageRes.headers.get("content-type") || "";
+    if (!contentType.startsWith("image/")) {
+      return new NextResponse(null, { status: 502 });
     }
 
     const imageBuffer = await imageRes.arrayBuffer();
     return new NextResponse(imageBuffer, {
       headers: {
-        "Content-Type": "image/png",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=86400, s-maxage=86400",
       },
     });
   } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch map image" },
-      { status: 502 }
-    );
+    return new NextResponse(null, { status: 502 });
   }
 }

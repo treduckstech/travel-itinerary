@@ -1,13 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { Car, Clock, ExternalLink, MapPin } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
 
-function parseAddresses(description: string | null): { origin: string; destination: string } | null {
-  if (!description?.includes("|||")) return null;
-  const [origin, destination] = description.split("|||");
-  if (!origin?.trim() || !destination?.trim()) return null;
-  return { origin: origin.trim(), destination: destination.trim() };
+function parseAddresses(
+  description: string | null,
+  location: string | null
+): { origin: string; destination: string } | null {
+  if (description?.includes("|||")) {
+    const [origin, destination] = description.split("|||");
+    if (origin?.trim() && destination?.trim()) {
+      return { origin: origin.trim(), destination: destination.trim() };
+    }
+  }
+  // Fallback: parse "Origin → Destination" from location field
+  if (location?.includes("→")) {
+    const [origin, destination] = location.split("→").map((s) => s.trim());
+    if (origin && destination) {
+      return { origin, destination };
+    }
+  }
+  return null;
 }
 
 function formatDuration(start: string, end: string): string {
@@ -21,7 +35,8 @@ function formatDuration(start: string, end: string): string {
 }
 
 export function DriveDetailCard({ event }: { event: TripEvent }) {
-  const addresses = parseAddresses(event.description);
+  const [mapError, setMapError] = useState(false);
+  const addresses = parseAddresses(event.description, event.location);
   const duration = event.end_datetime
     ? formatDuration(event.start_datetime, event.end_datetime)
     : null;
@@ -38,7 +53,7 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
 
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
-      {mapUrl && (
+      {mapUrl && !mapError && (
         <div className="overflow-hidden rounded-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -46,6 +61,7 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
             alt="Route map"
             className="w-full h-auto"
             loading="lazy"
+            onError={() => setMapError(true)}
           />
         </div>
       )}

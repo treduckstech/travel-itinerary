@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ExternalLink, MapPin, Star, DollarSign, UtensilsCrossed } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
 
@@ -28,6 +29,7 @@ function parseNotesMeta(notes: string | null): { cuisine?: string; price?: strin
 }
 
 export function RestaurantDetailCard({ event }: { event: TripEvent }) {
+  const [mapError, setMapError] = useState(false);
   const latLng = parseLatLng(event.description);
   const benEatsId = parseBenEatsId(event.confirmation_number);
   const meta = parseNotesMeta(event.notes);
@@ -42,7 +44,7 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
 
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
-      {mapUrl && (
+      {mapUrl && !mapError && (
         <div className="overflow-hidden rounded-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -50,6 +52,7 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
             alt="Restaurant location"
             className="w-full h-auto"
             loading="lazy"
+            onError={() => setMapError(true)}
           />
         </div>
       )}
