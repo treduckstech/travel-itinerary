@@ -17,6 +17,17 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Verify the user owns this trip (only owners should see/manage shares)
+  const { data: trip } = await supabase
+    .from("trips")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (!trip || trip.user_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { data: shares, error } = await supabase
     .from("trip_shares")
     .select("*")
@@ -104,7 +115,17 @@ export async function DELETE(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "shareId is required" }, { status: 400 });
   }
 
-  // RLS ensures only owner can delete
+  // Verify the user owns this trip before allowing share deletion
+  const { data: trip } = await supabase
+    .from("trips")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (!trip || trip.user_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { error } = await supabase
     .from("trip_shares")
     .delete()

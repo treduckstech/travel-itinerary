@@ -228,6 +228,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: 20 flight lookups per minute per user
+  const { rateLimit } = await import("@/lib/rate-limit");
+  const rl = rateLimit(`flights:${user.id}`, { limit: 20, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const flightAwareKey = process.env.FLIGHTAWARE_API_KEY;
   const airLabsKey = process.env.AIRLABS_API_KEY;
 

@@ -23,6 +23,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: 20 restaurant searches per minute per user
+  const { rateLimit } = await import("@/lib/rate-limit");
+  const rl = rateLimit(`restaurants:${user.id}`, { limit: 20, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const apiKey = process.env.BENEATS_API_KEY;
 
   if (!apiKey) {

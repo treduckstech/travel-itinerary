@@ -9,6 +9,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: 30 static map requests per minute per user
+  const { rateLimit } = await import("@/lib/rate-limit");
+  const rl = rateLimit(`maps:${user.id}`, { limit: 30, windowSeconds: 60 });
+  if (!rl.success) {
+    return new NextResponse(null, { status: 429 });
+  }
+
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

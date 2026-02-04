@@ -15,6 +15,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: 30 place searches per minute per user
+  const { rateLimit } = await import("@/lib/rate-limit");
+  const rl = rateLimit(`places:${user.id}`, { limit: 30, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {

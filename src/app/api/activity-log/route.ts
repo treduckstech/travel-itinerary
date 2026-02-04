@@ -12,6 +12,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: 30 log entries per minute per user
+  const { rateLimit } = await import("@/lib/rate-limit");
+  const rl = rateLimit(`activity-log:${user.id}`, { limit: 30, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const ALLOWED_ACTIONS = [
     "signup", "login", "trip_created", "trip_deleted",
     "event_added", "event_deleted", "share_created", "share_revoked",
