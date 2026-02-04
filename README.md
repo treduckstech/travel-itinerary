@@ -16,10 +16,15 @@ A travel planning app to organize trips, events, and prep lists — with Google 
 - **Collaborative Sharing** -- Invite others by email to view and edit your trips
 - **Public Share Links** -- Generate a read-only link anyone can view without signing in
 - **Trip Management** -- Create, edit, and delete trips with destinations and date ranges
-- **Events** -- Add flights, hotels, restaurants, and activities to each trip with type-specific fields (departure/arrival for flights, check-in/out for hotels, etc.)
+- **Events** -- Add flights, hotels, restaurants, drives, and activities to each trip with type-specific fields (departure/arrival for flights, check-in/out for hotels, origin/destination for drives, etc.)
+- **Flight Lookup** -- Auto-fill flight details from FlightAware or AirLabs by entering a flight number
+- **Restaurant Search** -- Search restaurants via BenEats API integration
+- **Place Search & Drive Time** -- Google Maps-powered place search with automatic drive time calculation
+- **Static Map Previews** -- Map thumbnails for drive routes and restaurant locations
 - **Calendar View** -- Interactive calendar highlighting trip dates and event days, with a detail panel for selected dates
 - **Prep List** -- Per-trip todo checklist with add, complete, and delete functionality
 - **Day-Grouped Itinerary** -- Events organized chronologically by day
+- **Admin Console** -- Dashboard with stats, user management, analytics charts (growth, destinations, event types), and a filterable activity log (admin-only, restricted by email allowlist)
 - **Ocean Teal Design System** -- Custom color palette with polished UI across all views
 
 ## Prerequisites
@@ -79,10 +84,13 @@ The service role key is found in the Supabase dashboard under **Settings > API >
 3. Click **New query**
 4. Open the file `supabase/schema.sql` from this repo and copy its entire contents
 5. Paste it into the SQL editor and click **Run**
-6. Open the file `supabase/migrations/001_add_auth_and_sharing.sql` and copy its entire contents
-7. Paste it into a new query in the SQL editor and click **Run**
+6. Run each migration file in order:
+   - `supabase/migrations/001_add_auth_and_sharing.sql` -- Adds auth columns, `trip_shares` table, and RLS policies
+   - `supabase/migrations/002_fix_rls_recursion.sql` -- Fixes infinite recursion in RLS policies with SECURITY DEFINER helpers
+   - `supabase/migrations/003_add_activity_logs.sql` -- Adds `activity_logs` table for admin activity tracking
+   - `supabase/migrations/004_restrict_shared_update.sql` -- Adds trigger to prevent shared editors from modifying sensitive columns
 
-This creates the tables (`trips`, `events`, `todos`, `trip_shares`), indexes, and Row Level Security policies.
+This creates the tables (`trips`, `events`, `todos`, `trip_shares`, `activity_logs`), indexes, RLS policies, and security triggers.
 
 ### 5. Set up Google SSO Authentication
 
@@ -239,8 +247,8 @@ Since Supabase is provisioned through the Vercel Marketplace, most environment v
 
 - `NEXT_PUBLIC_SUPABASE_URL` -- set automatically by marketplace integration
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` -- set automatically by marketplace integration
-- `SUPABASE_SERVICE_ROLE_KEY` -- required for public share links and user lookups
-- `GOOGLE_MAPS_API_KEY` -- optional, for drive place search
+- `SUPABASE_SERVICE_ROLE_KEY` -- required for public share links, user lookups, admin console, and activity logging
+- `GOOGLE_MAPS_API_KEY` -- optional, for drive place search and static map previews
 - `FLIGHTAWARE_API_KEY` -- optional, for flight lookup
 - `AIRLABS_API_KEY` -- optional, flight lookup fallback
 - `BENEATS_API_KEY` -- optional, for restaurant search
@@ -253,7 +261,7 @@ Push to deploy:
 
 ## Database Schema
 
-The app uses four tables:
+The app uses five tables:
 
 **trips** -- Top-level travel plans
 | Column | Type | Description |
@@ -272,7 +280,8 @@ The app uses four tables:
 |--------|------|-------------|
 | `id` | uuid | Primary key |
 | `trip_id` | uuid | Parent trip |
-| `type` | text | One of: `flight`, `hotel`, `restaurant`, `activity` |
+| `type` | text | One of: `travel`, `hotel`, `restaurant`, `activity` |
+| `sub_type` | text | Sub-type (e.g. `flight`, `drive`, `train` for travel) |
 | `title` | text | Event name (airline/flight#, hotel name, etc.) |
 | `description` | text | Optional description |
 | `start_datetime` | timestamptz | When it starts (departure, check-in, etc.) |
@@ -302,54 +311,112 @@ The app uses four tables:
 | `role` | text | Permission level (`editor`) |
 | `created_at` | timestamptz | When the share was created |
 
+**activity_logs** -- Admin activity tracking
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | User who performed the action (nullable) |
+| `user_email` | text | Email at time of action |
+| `action_type` | text | Action identifier (e.g. `trip_created`, `login`) |
+| `action_details` | jsonb | Additional context about the action |
+| `ip_address` | text | Client IP address |
+| `user_agent` | text | Client user agent string |
+| `created_at` | timestamptz | When the action occurred |
+
 ## Project Structure
 
 ```
 src/
   app/
-    page.tsx              # Dashboard (upcoming + past trips, scoped by user)
-    layout.tsx            # Root layout with header
-    login/page.tsx        # Google SSO login
-    signup/page.tsx       # Redirects to /login
-    auth/callback/route.ts # OAuth callback handler
-    share/[token]/page.tsx # Public read-only shared itinerary
+    page.tsx                # Dashboard (upcoming + past trips, scoped by user)
+    layout.tsx              # Root layout with header
+    login/page.tsx          # Google SSO login
+    signup/page.tsx         # Redirects to /login
+    auth/callback/route.ts  # OAuth callback handler
+    share/[token]/page.tsx  # Public read-only shared itinerary
     trips/
-      new/page.tsx        # Create trip form
-      [id]/page.tsx       # Trip detail (itinerary, calendar, prep list tabs)
-      [id]/edit/page.tsx  # Edit trip form
+      new/page.tsx          # Create trip form
+      [id]/page.tsx         # Trip detail (itinerary, calendar, prep list tabs)
+      [id]/edit/page.tsx    # Edit trip form
+    admin/
+      layout.tsx            # Admin layout with sidebar (auth + admin check)
+      page.tsx              # Admin dashboard with stat cards
+      users/page.tsx        # User management (search, table)
+      users/[id]/page.tsx   # User detail (stats, trips, shares, delete)
+      analytics/page.tsx    # Analytics with charts and CSV export
+      activity-log/page.tsx # Filterable, paginated activity log
     api/
-      trips/[id]/shares/route.ts # Share management API
-  middleware.ts           # Auth middleware (redirects to /login if unauthenticated)
+      activity-log/route.ts          # POST: log user actions (authenticated)
+      trips/[id]/shares/route.ts     # GET/POST/DELETE: share management
+      flights/lookup/route.ts        # GET: flight data lookup (rate limited)
+      places/search/route.ts         # GET: Google Places search (rate limited)
+      places/distance/route.ts       # GET: drive time calculation (rate limited)
+      maps/static/route.ts           # GET: static map image proxy (rate limited)
+      restaurants/search/route.ts    # GET: restaurant search (rate limited)
+      admin/stats/route.ts           # GET: dashboard stats
+      admin/users/route.ts           # GET: list users
+      admin/users/[id]/route.ts      # GET/DELETE: user detail and deletion
+      admin/analytics/route.ts       # GET: analytics overview
+      admin/analytics/growth/route.ts       # GET: time series growth data
+      admin/analytics/destinations/route.ts # GET: top destinations
+      admin/analytics/events/route.ts       # GET: event type distribution
+      admin/activity-log/route.ts    # GET: filtered activity log
+  middleware.ts             # Auth middleware + admin route blocking
   components/
-    header.tsx            # App header with logo, user email, sign out
+    header.tsx              # App header with logo, user email, admin link, sign out
     auth/
-      sign-out-button.tsx # Sign out button
+      sign-out-button.tsx   # Sign out button
     calendar/
-      trip-calendar.tsx   # Calendar view with event highlighting
+      trip-calendar.tsx     # Calendar view with event highlighting
     events/
-      event-card.tsx      # Single event display (supports readOnly mode)
+      event-card.tsx        # Single event display (supports readOnly mode)
       event-form-dialog.tsx # Add/edit event dialog
-      event-list.tsx      # Day-grouped event list (supports readOnly mode)
+      event-list.tsx        # Day-grouped event list (supports readOnly mode)
+      airport-combobox.tsx  # Airport search combobox for flights
+      station-combobox.tsx  # Station search combobox for trains
+      place-search.tsx      # Google Places search combobox for drives
+      drive-detail-card.tsx # Drive event detail with map preview
+      restaurant-search.tsx # Restaurant search combobox
+      restaurant-detail-card.tsx # Restaurant detail with map preview
     todos/
-      todo-list.tsx       # Todo checklist (supports readOnly mode)
+      todo-list.tsx         # Todo checklist (supports readOnly mode)
     trips/
-      trip-card.tsx       # Trip summary card for dashboard
-      trip-form.tsx       # Create/edit trip form
+      trip-card.tsx         # Trip summary card for dashboard
+      trip-form.tsx         # Create/edit trip form
       delete-trip-button.tsx # Delete confirmation dialog
-      share-dialog.tsx    # Share trip dialog (invite by email, public link)
-    ui/                   # shadcn/ui components (button, card, dialog, etc.)
+      share-dialog.tsx      # Share trip dialog (invite by email, public link)
+    admin/
+      admin-sidebar.tsx     # Admin nav sidebar with active state
+      stat-card.tsx         # Reusable stat card with growth %
+      pagination.tsx        # Reusable pagination (first/prev/next/last)
+      activity-log-filters.tsx # Activity log filter form
+      activity-log-table.tsx   # Activity log table with color-coded badges
+      analytics/
+        date-range-selector.tsx # Date range dropdown
+        overview-cards.tsx      # Analytics overview stat cards
+        growth-chart.tsx        # Line chart for growth over time
+        destination-chart.tsx   # Bar chart for top destinations
+        event-type-chart.tsx    # Bar chart for event type distribution
+        index.ts                # Barrel exports
+    ui/                     # shadcn/ui components (button, card, dialog, etc.)
   lib/
     supabase/
-      client.ts           # Browser-side Supabase client
-      server.ts           # Server-side Supabase client (uses cookies)
-      service.ts          # Service-role client (bypasses RLS)
-      middleware.ts        # Session refresh logic
-    types.ts              # TypeScript types matching the DB schema
-    utils.ts              # Utility functions (cn)
+      client.ts             # Browser-side Supabase client
+      server.ts             # Server-side Supabase client (uses cookies)
+      service.ts            # Service-role client (bypasses RLS)
+      middleware.ts          # Session refresh + admin route blocking
+    admin.ts                # Admin email allowlist and isAdmin() check
+    activity-log.ts         # Client-side fire-and-forget activity logger
+    rate-limit.ts           # In-memory per-user rate limiter
+    types.ts                # TypeScript types matching the DB schema
+    utils.ts                # Utility functions (cn)
 supabase/
-  schema.sql              # Base database schema
+  schema.sql                # Base database schema
   migrations/
-    001_add_auth_and_sharing.sql # Auth columns, trip_shares table, RLS policies
+    001_add_auth_and_sharing.sql      # Auth columns, trip_shares, RLS policies
+    002_fix_rls_recursion.sql         # SECURITY DEFINER helpers, fixed RLS policies
+    003_add_activity_logs.sql         # Activity logs table
+    004_restrict_shared_update.sql    # Trigger to block sensitive column updates by shared editors
 ```
 
 ## Troubleshooting
@@ -365,3 +432,5 @@ supabase/
 **Public share link shows 404** -- Make sure the `SUPABASE_SERVICE_ROLE_KEY` environment variable is set. The public share page uses the service-role client to bypass RLS.
 
 **Shared user can't see the trip** -- The shared user must sign in with the same email address used in the share invitation. If they signed up after being invited, their `shared_with_user_id` in `trip_shares` may be null — re-sharing will update it.
+
+**Admin console shows 403/redirect** -- Only emails listed in `src/lib/admin.ts` can access `/admin`. The default is `ben@treducks.tech`. Add your email to the `ADMIN_EMAILS` array and redeploy.
