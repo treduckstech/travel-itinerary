@@ -54,7 +54,7 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
       {mapUrl && !mapError && (
-        <div className="overflow-hidden rounded-md">
+        <div className="overflow-hidden rounded-md max-w-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={mapUrl}

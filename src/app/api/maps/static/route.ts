@@ -27,17 +27,17 @@ export async function GET(req: NextRequest) {
 
       if (dirData.status === "OK" && dirData.routes?.[0]?.overview_polyline?.points) {
         const polyline = dirData.routes[0].overview_polyline.points;
-        staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x300&scale=2&path=enc:${encodeURIComponent(polyline)}&markers=color:green|label:A|${encodeURIComponent(origin)}&markers=color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
+        staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=400x200&scale=2&path=weight:4|color:0x4285F4ff|enc:${polyline}&markers=size:small|color:green|label:A|${encodeURIComponent(origin)}&markers=size:small|color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
       } else {
         // Fallback: just show markers without route
-        staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x300&scale=2&markers=color:green|label:A|${encodeURIComponent(origin)}&markers=color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
+        staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=400x200&scale=2&markers=size:small|color:green|label:A|${encodeURIComponent(origin)}&markers=size:small|color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
       }
     } catch {
-      staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x300&scale=2&markers=color:green|label:A|${encodeURIComponent(origin)}&markers=color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
+      staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=400x200&scale=2&markers=size:small|color:green|label:A|${encodeURIComponent(origin)}&markers=size:small|color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
     }
   } else if (lat && lng) {
     // Restaurant mode: single marker
-    staticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=600x300&scale=2&markers=color:red|${lat},${lng}&key=${apiKey}`;
+    staticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=400x200&scale=2&markers=color:red|${lat},${lng}&key=${apiKey}`;
   } else {
     return NextResponse.json(
       { error: "Missing required parameters" },
