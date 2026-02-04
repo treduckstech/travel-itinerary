@@ -49,7 +49,22 @@
 - [x] Email notifications via Resend (friend requests, trip shares, admin signup alerts)
 - [x] Quick share with friends in share dialog
 
+## Completed (UX & Design)
+- [x] Warm accent color and visual identity (customized from stock shadcn/ui)
+- [x] Onboarding empty state for new users ("Where to next?")
+- [x] Featured trip card with countdown badge for next upcoming trip
+- [x] BenEats link in restaurant detail cards
+- [x] Drive time calculation fix
+- [x] Dedicated train form with operator, class, coach, seat fields
+- [x] Expandable train detail card with route visualization
+- [x] Italian train stations (Cinque Terre, Lake Como, Sicily, tourist destinations)
+- [x] Station code to city name resolution on train cards
+
+## Bugs
+- [ ] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)
+
 ## Phase 3 - Enhancements
+- [ ] Show local times with timezone on flight cards (based on airport timezone)
 - [ ] Drag-and-drop event reordering
 - [ ] File/document attachments (boarding passes, confirmations)
 - [ ] Interactive map view (show event locations on a map)
@@ -57,7 +72,6 @@
 - [ ] Weather forecast integration for trip dates
 - [ ] Export itinerary as PDF
 - [ ] Dark mode toggle
-- [ ] Show local times with timezone on flight cards (based on airport timezone)
 
 ## Phase 4 - Advanced
 - [ ] AI-powered trip suggestions

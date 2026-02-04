@@ -1,5 +1,9 @@
 # Travel Itinerary - Claude Code Guidance
 
+## URLs
+- **Travel app:** travel.treducks.io
+- **Restaurant API:** beneats.ai
+
 ## Tech Stack
 - Next.js 15 (App Router) with TypeScript
 - shadcn/ui + Tailwind CSS v4
@@ -15,6 +19,8 @@
 - `src/app/friends/` - Friends management page
 - `src/components/` - React components organized by domain (admin, auth, trips, events, calendar, todos, notifications, ui)
 - `src/components/admin/` - Admin components (sidebar, stat cards, pagination, analytics charts, activity log)
+- `src/components/events/` - Event components (event cards, detail cards for drive/train/restaurant/hotel, form dialog, airport/station comboboxes)
+- `src/data/` - Static data (airports, stations)
 - `src/lib/` - Shared utilities, types, Supabase clients, admin helpers, rate limiting
 - `supabase/` - Database schema and migrations
 
@@ -31,6 +37,28 @@
 - Friends system uses `friendships` table with pending/accepted/declined status
 - Notifications created via service client, polled by client every 30s
 - Email via Resend (`src/lib/email.ts`) - fire-and-forget, no-ops without RESEND_API_KEY
+
+## Travel Event Sub-types
+Travel events have a `sub_type` field: `flight`, `train`, `ferry`, or `drive`.
+
+### Description Field Encoding
+The `description` field uses `|||` as a separator to store structured data without schema changes:
+- **Drives:** `originAddress|||destinationAddress`
+- **Trains:** `operator|||class|||coach|||seat`
+- **Restaurants:** Google Maps URL (when from search)
+- **Hotels:** Google Maps URL (when from search)
+
+### Stations & Airports
+- Airport data in `src/data/airports.ts` — used by `AirportCombobox` for flight forms
+- Station data in `src/data/stations.ts` — used by `StationCombobox` for train and ferry forms
+- Stations include US (Amtrak), UK, France, Germany, Italy (including Cinque Terre, Lake Como, Sicily), Spain, Netherlands, Belgium, Switzerland, Austria, Scandinavia, Eastern Europe, Portugal, Ireland, and ferry terminals
+
+### Event Detail Cards
+Each travel sub-type has an expandable detail card:
+- `DriveDetailCard` — route map, addresses, Google Maps link
+- `TrainDetailCard` — route visualization with station resolution, operator, class, coach/seat, confirmation number
+- `RestaurantDetailCard` — cuisine, price, rating, BenEats link, Google Maps link
+- `HotelDetailCard` — address, Google Maps link
 
 ## Security
 - All API proxy routes (flights, places, maps, restaurants) require authentication
@@ -54,3 +82,6 @@
 - `BENEATS_API_KEY` - BenEats API key for restaurant search (optional, server-side only)
 - `GOOGLE_MAPS_API_KEY` - Google Maps API key for place search and drive time calculation (optional, server-side only; requires Places API and Distance Matrix API)
 - `RESEND_API_KEY` - Resend API key for email notifications (optional, server-side only)
+
+## Tracking
+- Feature roadmap and pending tasks are tracked in `TODO.md` — always keep it in sync when completing work or adding new tasks
