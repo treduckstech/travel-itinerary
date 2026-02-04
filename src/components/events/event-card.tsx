@@ -62,40 +62,25 @@ function isExpandable(event: TripEvent): boolean {
 export function EventCard({ event, readOnly, showDateRange, fillHeight }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(fillHeight && isExpandable(event));
   const cardRef = useRef<HTMLDivElement>(null);
-  const triedAutoExpand = useRef(false);
   const router = useRouter();
 
-  // Auto-expand detail on fillHeight cards once the grid gives the card its final height
+  // For fillHeight cards that start expanded, collapse if content overflows
   useEffect(() => {
-    if (!fillHeight || !isExpandable(event)) return;
+    if (!fillHeight || !expanded) return;
     const card = cardRef.current;
     if (!card) return;
 
     const observer = new ResizeObserver(() => {
-      if (triedAutoExpand.current) return;
-      const extraSpace = card.clientHeight - card.scrollHeight;
-      if (extraSpace > 100) {
-        triedAutoExpand.current = true;
-        setExpanded(true);
+      if (card.scrollHeight > card.clientHeight + 4) {
+        setExpanded(false);
+        observer.disconnect();
       }
     });
 
     observer.observe(card);
     return () => observer.disconnect();
-  }, [fillHeight, event]);
-
-  // After auto-expanding, check if content actually fits; collapse if it overflows
-  useEffect(() => {
-    if (!fillHeight || !expanded || !triedAutoExpand.current) return;
-    const card = cardRef.current;
-    if (!card) return;
-    requestAnimationFrame(() => {
-      if (card.scrollHeight > card.clientHeight + 4) {
-        setExpanded(false);
-      }
-    });
   }, [fillHeight, expanded]);
   const supabase = createClient();
   const config = typeConfig[event.type];
