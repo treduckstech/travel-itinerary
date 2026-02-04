@@ -11,8 +11,9 @@
 - `src/app/` - Next.js App Router pages and API routes
 - `src/app/admin/` - Admin console (dashboard, users, analytics, activity log)
 - `src/app/api/admin/` - Admin API routes (stats, users, analytics, activity log)
-- `src/app/api/` - Public API routes (trips, flights, places, maps, restaurants, activity log)
-- `src/components/` - React components organized by domain (admin, auth, trips, events, calendar, todos, ui)
+- `src/app/api/` - Public API routes (trips, flights, places, maps, restaurants, activity log, friends, notifications)
+- `src/app/friends/` - Friends management page
+- `src/components/` - React components organized by domain (admin, auth, trips, events, calendar, todos, notifications, ui)
 - `src/components/admin/` - Admin components (sidebar, stat cards, pagination, analytics charts, activity log)
 - `src/lib/` - Shared utilities, types, Supabase clients, admin helpers, rate limiting
 - `supabase/` - Database schema and migrations
@@ -27,6 +28,9 @@
 - Per-user in-memory rate limiting on external API proxy routes (`src/lib/rate-limit.ts`)
 - UI components are from shadcn/ui in `src/components/ui/`
 - Types in `src/lib/types.ts` mirror the database schema
+- Friends system uses `friendships` table with pending/accepted/declined status
+- Notifications created via service client, polled by client every 30s
+- Email via Resend (`src/lib/email.ts`) - fire-and-forget, no-ops without RESEND_API_KEY
 
 ## Security
 - All API proxy routes (flights, places, maps, restaurants) require authentication
@@ -49,3 +53,4 @@
 - `AIRLABS_API_KEY` - AirLabs API key for flight lookup fallback (optional, server-side only)
 - `BENEATS_API_KEY` - BenEats API key for restaurant search (optional, server-side only)
 - `GOOGLE_MAPS_API_KEY` - Google Maps API key for place search and drive time calculation (optional, server-side only; requires Places API and Distance Matrix API)
+- `RESEND_API_KEY` - Resend API key for email notifications (optional, server-side only)

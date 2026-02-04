@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     "signup", "login", "trip_created", "trip_deleted",
     "event_added", "event_deleted", "share_created", "share_revoked",
     "public_link_generated", "public_link_revoked",
+    "friend_request_sent", "friend_request_accepted", "friend_removed",
   ];
 
   const { action_type, action_details } = await request.json();

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Plane, Shield } from "lucide-react";
+import { Plane, Shield, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export async function Header() {
   const headersList = await headers();
@@ -26,6 +27,14 @@ export async function Header() {
         </Link>
         {user && (
           <div className="flex items-center gap-3">
+            <Link
+              href="/friends"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Friends</span>
+            </Link>
+            <NotificationBell />
             {isAdmin(user.email) && (
               <Link
                 href="/admin"

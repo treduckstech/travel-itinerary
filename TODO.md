@@ -41,6 +41,14 @@
 - [x] RLS on activity_logs table (service role only)
 - [x] Share page restricted to safe column selection
 
+## Completed (Social & Notifications)
+- [x] Hotel search via Google Places (with map detail cards)
+- [x] Friends system (send/accept/decline/remove friend requests)
+- [x] In-app notification bell with polling and unread badge
+- [x] Notification triggers (friend requests, trip shares)
+- [x] Email notifications via Resend (friend requests, trip shares, admin signup alerts)
+- [x] Quick share with friends in share dialog
+
 ## Phase 3 - Enhancements
 - [ ] Drag-and-drop event reordering
 - [ ] File/document attachments (boarding passes, confirmations)
@@ -48,7 +56,6 @@
 - [ ] Budget tracking per trip
 - [ ] Weather forecast integration for trip dates
 - [ ] Export itinerary as PDF
-- [ ] Email/push notifications for upcoming events
 - [ ] Dark mode toggle
 
 ## Phase 4 - Advanced

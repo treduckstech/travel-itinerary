@@ -24,6 +24,10 @@ A travel planning app to organize trips, events, and prep lists — with Google 
 - **Calendar View** -- Interactive calendar highlighting trip dates and event days, with a detail panel for selected dates
 - **Prep List** -- Per-trip todo checklist with add, complete, and delete functionality
 - **Day-Grouped Itinerary** -- Events organized chronologically by day
+- **Hotel Search** -- Search hotels via Google Places with map detail cards
+- **Friends System** -- Add friends by email, accept/decline requests, quick-share trips with friends
+- **In-App Notifications** -- Bell icon with unread count badge, auto-polling, click-to-navigate
+- **Email Notifications** -- Via Resend for friend requests, trip shares, and admin signup alerts
 - **Admin Console** -- Dashboard with stats, user management, analytics charts (growth, destinations, event types), and a filterable activity log (admin-only, restricted by email allowlist)
 - **Ocean Teal Design System** -- Custom color palette with polished UI across all views
 
@@ -89,8 +93,9 @@ The service role key is found in the Supabase dashboard under **Settings > API >
    - `supabase/migrations/002_fix_rls_recursion.sql` -- Fixes infinite recursion in RLS policies with SECURITY DEFINER helpers
    - `supabase/migrations/003_add_activity_logs.sql` -- Adds `activity_logs` table for admin activity tracking
    - `supabase/migrations/004_restrict_shared_update.sql` -- Adds trigger to prevent shared editors from modifying sensitive columns
+   - `supabase/migrations/005_add_friends_and_notifications.sql` -- Adds `friendships` and `notifications` tables with RLS
 
-This creates the tables (`trips`, `events`, `todos`, `trip_shares`, `activity_logs`), indexes, RLS policies, and security triggers.
+This creates the tables (`trips`, `events`, `todos`, `trip_shares`, `activity_logs`, `friendships`, `notifications`), indexes, RLS policies, and security triggers.
 
 ### 5. Set up Google SSO Authentication
 
@@ -224,7 +229,21 @@ Google Maps APIs require a billing account linked to your Google Cloud project. 
 
 Go to **Billing** in the Cloud Console to set up a billing account if you don't have one. You can set budget alerts to avoid unexpected charges.
 
-### 7. Start the dev server
+### 7. Set up Resend for email notifications (optional)
+
+Email notifications (friend requests, trip shares, admin signup alerts) are sent via [Resend](https://resend.com). Without this key, the app works normally but skips sending emails.
+
+1. Create an account at [resend.com](https://resend.com)
+2. Go to **Domains** > **Add Domain** > enter your domain (e.g. `treducks.tech`)
+3. Resend shows DNS records to add. In your domain registrar, add:
+   - **MX record**: Host `feedback-smtp.{region}.amazonses.com`, priority 10 (for bounce handling)
+   - **SPF TXT record**: Name `@` or subdomain, value `v=spf1 include:amazonses.com ~all`
+   - **DKIM CNAME records** (3 records): Resend provides the exact name/value pairs
+4. Wait for verification (usually a few minutes, can take up to 72 hours)
+5. Create an API key: **Settings** > **API Keys** > **Create API Key**
+6. Add `RESEND_API_KEY` to `.env.local` and Vercel env vars
+
+### 8. Start the dev server
 
 ```bash
 npm run dev
@@ -252,6 +271,7 @@ Since Supabase is provisioned through the Vercel Marketplace, most environment v
 - `FLIGHTAWARE_API_KEY` -- optional, for flight lookup
 - `AIRLABS_API_KEY` -- optional, flight lookup fallback
 - `BENEATS_API_KEY` -- optional, for restaurant search
+- `RESEND_API_KEY` -- optional, for email notifications
 
 Push to deploy:
 
@@ -323,6 +343,29 @@ The app uses five tables:
 | `user_agent` | text | Client user agent string |
 | `created_at` | timestamptz | When the action occurred |
 
+**friendships** -- Friend connections between users
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `requester_id` | uuid | User who sent the request |
+| `addressee_id` | uuid | User who received the request |
+| `status` | text | One of: `pending`, `accepted`, `declined` |
+| `created_at` | timestamptz | When the request was created |
+| `updated_at` | timestamptz | When the status last changed |
+
+**notifications** -- In-app notifications
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `recipient_id` | uuid | User receiving the notification |
+| `actor_id` | uuid | User who triggered it (nullable) |
+| `type` | text | Notification type (e.g. `friend_request`, `trip_shared`) |
+| `title` | text | Notification title |
+| `body` | text | Notification body (nullable) |
+| `data` | jsonb | Additional context |
+| `read` | boolean | Whether it's been read |
+| `created_at` | timestamptz | When it was created |
+
 ## Project Structure
 
 ```
@@ -332,7 +375,8 @@ src/
     layout.tsx              # Root layout with header
     login/page.tsx          # Google SSO login
     signup/page.tsx         # Redirects to /login
-    auth/callback/route.ts  # OAuth callback handler
+    auth/callback/route.ts  # OAuth callback handler (+ admin signup email)
+    friends/page.tsx        # Friends management (send/accept/decline/remove)
     share/[token]/page.tsx  # Public read-only shared itinerary
     trips/
       new/page.tsx          # Create trip form
@@ -347,6 +391,9 @@ src/
       activity-log/page.tsx # Filterable, paginated activity log
     api/
       activity-log/route.ts          # POST: log user actions (authenticated)
+      friends/route.ts               # GET/POST: list friends, send request
+      friends/[id]/route.ts          # PATCH/DELETE: accept/decline/remove
+      notifications/route.ts         # GET/PATCH: list and mark notifications read
       trips/[id]/shares/route.ts     # GET/POST/DELETE: share management
       flights/lookup/route.ts        # GET: flight data lookup (rate limited)
       places/search/route.ts         # GET: Google Places search (rate limited)
@@ -378,6 +425,8 @@ src/
       drive-detail-card.tsx # Drive event detail with map preview
       restaurant-search.tsx # Restaurant search combobox
       restaurant-detail-card.tsx # Restaurant detail with map preview
+      hotel-search.tsx      # Hotel search combobox (Google Places)
+      hotel-detail-card.tsx # Hotel detail with map preview
     todos/
       todo-list.tsx         # Todo checklist (supports readOnly mode)
     trips/
@@ -385,6 +434,8 @@ src/
       trip-form.tsx         # Create/edit trip form
       delete-trip-button.tsx # Delete confirmation dialog
       share-dialog.tsx      # Share trip dialog (invite by email, public link)
+    notifications/
+      notification-bell.tsx # Bell icon with unread count and popover list
     admin/
       admin-sidebar.tsx     # Admin nav sidebar with active state
       stat-card.tsx         # Reusable stat card with growth %
@@ -406,6 +457,7 @@ src/
       service.ts            # Service-role client (bypasses RLS)
       middleware.ts          # Session refresh + admin route blocking
     admin.ts                # Admin email allowlist and isAdmin() check
+    email.ts                # Resend email sender (fire-and-forget, no-ops without key)
     activity-log.ts         # Client-side fire-and-forget activity logger
     rate-limit.ts           # In-memory per-user rate limiter
     types.ts                # TypeScript types matching the DB schema

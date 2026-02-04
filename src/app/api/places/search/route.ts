@@ -4,6 +4,12 @@ interface GooglePlaceResult {
   place_id: string;
   name: string;
   formatted_address: string;
+  geometry?: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -69,6 +75,8 @@ export async function GET(request: NextRequest) {
       id: p.place_id,
       name: p.name,
       address: p.formatted_address ?? "",
+      lat: p.geometry?.location?.lat,
+      lng: p.geometry?.location?.lng,
     }));
 
     return NextResponse.json(places);

@@ -65,6 +65,30 @@ export interface PlaceResult {
   id: string;
   name: string;
   address: string;
+  lat?: number;
+  lng?: number;
+}
+
+export interface Friendship {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
+  updated_at: string;
+  email?: string;
+}
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  type: string;
+  title: string;
+  body: string | null;
+  data: Record<string, unknown>;
+  read: boolean;
+  created_at: string;
 }
 
 export interface Todo {

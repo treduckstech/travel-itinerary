@@ -29,6 +29,7 @@ import { logActivity } from "@/lib/activity-log";
 import { AirportCombobox } from "@/components/events/airport-combobox";
 import { StationCombobox } from "@/components/events/station-combobox";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
+import { HotelSearch } from "@/components/events/hotel-search";
 import { PlaceSearch } from "@/components/events/place-search";
 
 interface EventFormDialogProps {
@@ -347,6 +348,16 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
   }
 
+  function handleHotelSelect(place: PlaceResult) {
+    setTitle(place.name);
+    setLocation(place.address || "");
+    if (place.lat && place.lng) {
+      setDescription(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`);
+    } else {
+      setDescription("");
+    }
+  }
+
   const typeLabels: Record<EventType, string> = {
     travel: "Travel",
     hotel: "Hotel",
@@ -477,6 +488,14 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     onSelect={handleRestaurantSelect}
                     onManualEntry={(name) => setTitle(name)}
                     placeholder="Search restaurants..."
+                  />
+                ) : type === "hotel" ? (
+                  <HotelSearch
+                    id="event-title"
+                    value={title}
+                    onSelect={handleHotelSelect}
+                    onManualEntry={(name) => setTitle(name)}
+                    placeholder="Search hotels..."
                   />
                 ) : (
                   <Input
@@ -744,7 +763,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     onChange={(e) => setLocation(e.target.value)}
                     maxLength={200}
                   />
-                  {type === "restaurant" && description && description.startsWith("https://www.google.com/maps") && (
+                  {(type === "restaurant" || type === "hotel") && description && description.startsWith("https://www.google.com/maps") && (
                     <a
                       href={description}
                       target="_blank"

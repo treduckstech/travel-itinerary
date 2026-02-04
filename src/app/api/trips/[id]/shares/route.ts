@@ -94,6 +94,30 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Notify the shared user
+  if (matchedUser) {
+    await serviceClient.from("notifications").insert({
+      recipient_id: matchedUser.id,
+      actor_id: user.id,
+      type: "trip_shared",
+      title: "Trip shared with you",
+      body: `${user.email} shared a trip with you`,
+      data: { trip_id: id },
+    });
+  }
+
+  // Send email
+  try {
+    const { sendEmail } = await import("@/lib/email");
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "A trip was shared with you on Travel Itinerary",
+      html: `<p><strong>${user.email}</strong> shared a trip with you on Travel Itinerary.</p><p>Log in to view and edit the trip.</p>`,
+    });
+  } catch {
+    // Fire-and-forget
+  }
+
   return NextResponse.json(share, { status: 201 });
 }
 

@@ -18,6 +18,7 @@ import {
 import { EventFormDialog } from "./event-form-dialog";
 import { DriveDetailCard } from "./drive-detail-card";
 import { RestaurantDetailCard } from "./restaurant-detail-card";
+import { HotelDetailCard } from "./hotel-detail-card";
 import {
   Plane,
   Hotel,
@@ -53,6 +54,7 @@ const subTypeIcons: Record<string, React.ElementType> = {
 function isExpandable(event: TripEvent): boolean {
   return (
     event.type === "restaurant" ||
+    event.type === "hotel" ||
     (event.type === "travel" && event.sub_type === "drive")
   );
 }
@@ -111,7 +113,7 @@ export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: bo
                     ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
                 </span>
                 {event.location && (
-                  event.type === "restaurant" && event.description?.startsWith("https://www.google.com/maps") ? (
+                  (event.type === "restaurant" || event.type === "hotel") && event.description?.startsWith("https://www.google.com/maps") ? (
                     <a
                       href={event.description}
                       target="_blank"
@@ -189,6 +191,9 @@ export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: bo
           )}
           {event.type === "restaurant" && (
             <RestaurantDetailCard event={event} />
+          )}
+          {event.type === "hotel" && (
+            <HotelDetailCard event={event} />
           )}
         </div>
       )}

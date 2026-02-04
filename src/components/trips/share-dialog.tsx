@@ -14,8 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Share2, Copy, Link2, Link2Off, Trash2, UserPlus } from "lucide-react";
-import type { TripShare } from "@/lib/types";
+import { Share2, Copy, Link2, Link2Off, Trash2, UserPlus, Users, Loader2 } from "lucide-react";
+import type { TripShare, Friendship } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 
 interface ShareDialogProps {
@@ -30,6 +30,9 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
   const [loading, setLoading] = useState(false);
   const [tokenLoading, setTokenLoading] = useState(false);
   const [currentToken, setCurrentToken] = useState(shareToken);
+  const [friends, setFriends] = useState<Friendship[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [sharingFriendId, setSharingFriendId] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -38,6 +41,14 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
       fetch(`/api/trips/${tripId}/shares`)
         .then((res) => (res.ok ? res.json() : []))
         .then(setShares);
+
+      setFriendsLoading(true);
+      fetch("/api/friends")
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data: Friendship[]) => {
+          setFriends(data.filter((f) => f.status === "accepted"));
+        })
+        .finally(() => setFriendsLoading(false));
     }
   }, [open, tripId]);
 
@@ -123,6 +134,25 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
     setTokenLoading(false);
   }
 
+  async function handleShareWithFriend(friendEmail: string, friendshipId: string) {
+    setSharingFriendId(friendshipId);
+    const res = await fetch(`/api/trips/${tripId}/shares`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: friendEmail }),
+    });
+
+    if (res.ok) {
+      toast.success(`Shared with ${friendEmail}`);
+      logActivity("share_created", { trip_id: tripId, shared_with: friendEmail });
+      fetchShares();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to share");
+    }
+    setSharingFriendId(null);
+  }
+
   function copyPublicLink() {
     if (!currentToken) return;
     navigator.clipboard.writeText(
@@ -148,6 +178,47 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Quick share with friends */}
+          {(friendsLoading || friends.length > 0) && (
+            <div className="space-y-3">
+              <h4 className="flex items-center gap-1.5 text-sm font-medium">
+                <Users className="h-3.5 w-3.5" />
+                Share with friends
+              </h4>
+              {friendsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading friends...
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {friends.map((friend) => {
+                    const alreadyShared = shares.some(
+                      (s) => s.shared_with_email === friend.email
+                    );
+                    return (
+                      <Button
+                        key={friend.id}
+                        variant={alreadyShared ? "secondary" : "outline"}
+                        size="sm"
+                        disabled={alreadyShared || sharingFriendId === friend.id}
+                        onClick={() =>
+                          friend.email && handleShareWithFriend(friend.email, friend.id)
+                        }
+                      >
+                        {sharingFriendId === friend.id ? (
+                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                        ) : null}
+                        {friend.email}
+                        {alreadyShared && " (shared)"}
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Invite by email */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium">Invite by email</h4>

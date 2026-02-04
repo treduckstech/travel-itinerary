@@ -35,6 +35,20 @@ export async function GET(request: Request) {
         user_agent: request.headers.get("user-agent") ?? null,
       });
 
+      // Send admin notification email on new signup
+      if (isNewUser) {
+        try {
+          const { sendEmail } = await import("@/lib/email");
+          await sendEmail({
+            to: "ben@treducks.tech",
+            subject: `New signup: ${data.user.email}`,
+            html: `<p>A new user signed up for Travel Itinerary:</p><p><strong>${data.user.email}</strong></p><p>Provider: ${data.user.app_metadata?.provider ?? "unknown"}</p>`,
+          });
+        } catch {
+          // Fire-and-forget
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
