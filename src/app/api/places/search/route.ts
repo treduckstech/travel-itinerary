@@ -7,6 +7,14 @@ interface GooglePlaceResult {
 }
 
 export async function GET(request: NextRequest) {
+  // Auth check — prevent unauthenticated abuse of paid API proxies
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {

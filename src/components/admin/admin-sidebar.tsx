@@ -8,6 +8,7 @@ import {
   BarChart3,
   Activity,
   ArrowLeft,
+  Plane,
 } from "lucide-react";
 
 const navItems = [
@@ -26,22 +27,25 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r bg-zinc-950 text-zinc-100 lg:flex">
-      <div className="border-b border-zinc-800 p-4">
+    <aside className="hidden w-64 flex-col border-r bg-card lg:flex">
+      <div className="border-b p-4">
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to App
         </Link>
       </div>
 
-      <div className="px-4 pt-6 pb-2">
-        <h2 className="font-display text-lg">Admin Console</h2>
+      <div className="flex items-center gap-2.5 px-4 pt-6 pb-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Plane className="h-4 w-4" />
+        </div>
+        <h2 className="font-display text-lg">Admin</h2>
       </div>
 
-      <nav className="flex-1 px-2 py-2 space-y-1">
+      <nav className="flex-1 px-2 py-4 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -51,8 +55,8 @@ export function AdminSidebar() {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 active
-                  ? "bg-zinc-800 text-white"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                  ? "bg-accent text-accent-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               }`}
             >
               <Icon className="h-4 w-4" />

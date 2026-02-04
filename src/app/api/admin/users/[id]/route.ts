@@ -7,8 +7,15 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
+
+  if (!UUID_REGEX.test(id)) {
+    return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,30 +34,21 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
   const targetUser = userData.user;
 
-  const [tripsRes, , todosRes] = await Promise.all([
-    serviceClient
-      .from("trips")
-      .select("id, name, destination, start_date")
-      .eq("user_id", id)
-      .order("start_date", { ascending: false }),
-    serviceClient
-      .from("trip_shares")
-      .select("id, trip_id, shared_with_email, trips(name)")
-      .or(`shared_with_user_id.eq.${id},trip_id.in.(${`select id from trips where user_id='${id}'`})`)
-      ,
-    serviceClient
-      .from("todos")
-      .select("id", { count: "exact", head: true })
-      .in(
-        "trip_id",
-        (
-          await serviceClient.from("trips").select("id").eq("user_id", id)
-        ).data?.map((t) => t.id) ?? []
-      ),
-  ]);
+  // First fetch trips to get IDs for subsequent queries
+  const tripsRes = await serviceClient
+    .from("trips")
+    .select("id, name, destination, start_date")
+    .eq("user_id", id)
+    .order("start_date", { ascending: false });
+
+  const tripIds = tripsRes.data?.map((t) => t.id) ?? [];
+
+  const todosRes = await serviceClient
+    .from("todos")
+    .select("id", { count: "exact", head: true })
+    .in("trip_id", tripIds.length > 0 ? tripIds : ["__none__"]);
 
   // Count events across user's trips
-  const tripIds = tripsRes.data?.map((t) => t.id) ?? [];
   let eventsCount = 0;
   if (tripIds.length > 0) {
     const { count } = await serviceClient
@@ -64,7 +62,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   const { data: ownerShares } = await serviceClient
     .from("trip_shares")
     .select("id, trip_id, shared_with_email, trips(name)")
-    .in("trip_id", tripIds);
+    .in("trip_id", tripIds.length > 0 ? tripIds : ["__none__"]);
 
   const provider =
     targetUser.app_metadata?.provider ??
@@ -90,6 +88,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
+  if (!UUID_REGEX.test(id)) {
+    return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+  }
   const supabase = await createClient();
   const {
     data: { user },
@@ -118,6 +119,9 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
+  if (!UUID_REGEX.test(id)) {
+    return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+  }
   const supabase = await createClient();
   const {
     data: { user },

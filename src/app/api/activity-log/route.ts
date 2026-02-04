@@ -12,10 +12,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const ALLOWED_ACTIONS = [
+    "signup", "login", "trip_created", "trip_deleted",
+    "event_added", "event_deleted", "share_created", "share_revoked",
+    "public_link_generated", "public_link_revoked",
+  ];
+
   const { action_type, action_details } = await request.json();
 
-  if (!action_type) {
-    return NextResponse.json({ error: "action_type required" }, { status: 400 });
+  if (!action_type || !ALLOWED_ACTIONS.includes(action_type)) {
+    return NextResponse.json({ error: "Invalid action_type" }, { status: 400 });
+  }
+
+  // Limit action_details size to prevent abuse
+  const detailsStr = JSON.stringify(action_details ?? {});
+  if (detailsStr.length > 2048) {
+    return NextResponse.json({ error: "action_details too large" }, { status: 400 });
   }
 
   const ip =

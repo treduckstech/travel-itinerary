@@ -20,7 +20,7 @@ export default async function SharePage({ params }: SharePageProps) {
 
   const { data: trip } = await supabase
     .from("trips")
-    .select("*")
+    .select("id, name, destination, start_date, end_date, share_token, created_at")
     .eq("share_token", token)
     .single();
 

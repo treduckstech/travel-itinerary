@@ -13,3 +13,7 @@ create table if not exists activity_logs (
 create index idx_activity_logs_created_at on activity_logs(created_at desc);
 create index idx_activity_logs_user_id on activity_logs(user_id);
 create index idx_activity_logs_action_type on activity_logs(action_type);
+
+-- Enable RLS and deny all access via anon key (only service role can access)
+alter table activity_logs enable row level security;
+-- No policies = deny all for anon/authenticated roles, service role bypasses RLS
