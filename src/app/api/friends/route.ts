@@ -156,6 +156,8 @@ export async function POST(request: NextRequest) {
       if (updateError) {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
+
+      return NextResponse.json({ ...friendship, status: "pending" }, { status: 200 });
     }
   }
 
@@ -196,8 +198,8 @@ export async function POST(request: NextRequest) {
         subject: "New friend request on Travel Itinerary",
         html: `<p><strong>${senderName}</strong> sent you a friend request on Travel Itinerary.</p><p>Log in to accept or decline.</p>`,
       });
-    } catch {
-      // Fire-and-forget
+    } catch (err) {
+      console.error("Failed to send friend request email:", err);
     }
   }
 
