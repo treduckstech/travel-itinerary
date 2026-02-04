@@ -44,16 +44,16 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     (event?.sub_type as TravelSubType) ?? "flight"
   );
   const [title, setTitle] = useState(event?.title ?? "");
-  const [startDatetime, setStartDatetime] = useState(
-    event?.start_datetime
-      ? new Date(event.start_datetime).toISOString().slice(0, 16)
-      : ""
-  );
-  const [endDatetime, setEndDatetime] = useState(
-    event?.end_datetime
-      ? new Date(event.end_datetime).toISOString().slice(0, 16)
-      : ""
-  );
+  const [startDatetime, setStartDatetime] = useState(() => {
+    if (!event?.start_datetime) return "";
+    const iso = new Date(event.start_datetime).toISOString();
+    return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
+  });
+  const [endDatetime, setEndDatetime] = useState(() => {
+    if (!event?.end_datetime) return "";
+    const iso = new Date(event.end_datetime).toISOString();
+    return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
+  });
   const [location, setLocation] = useState(event?.location ?? "");
   const [notes, setNotes] = useState(
     [event?.confirmation_number, event?.description, event?.notes]
@@ -683,8 +683,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       </Label>
                       <Input
                         id="event-start"
-                        type="datetime-local"
-                        value={startDatetime}
+                        type={type === "hotel" ? "date" : "datetime-local"}
+                        value={type === "hotel" ? startDatetime.slice(0, 10) : startDatetime}
                         onChange={(e) => handleDepartureChange(e.target.value)}
                         required
                       />
@@ -700,8 +700,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                         </Label>
                         <Input
                           id="event-end"
-                          type="datetime-local"
-                          value={endDatetime}
+                          type={type === "hotel" ? "date" : "datetime-local"}
+                          value={type === "hotel" ? endDatetime.slice(0, 10) : endDatetime}
                           onChange={(e) => setEndDatetime(e.target.value)}
                         />
                         {type === "travel" && subType === "flight" && flightDuration && (
