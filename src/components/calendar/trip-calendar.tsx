@@ -164,18 +164,20 @@ export function TripCalendar({
                             <p className="truncate font-medium leading-none">
                               {event.title}
                             </p>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3 shrink-0" />
-                              {format(
-                                parseISO(event.start_datetime),
-                                "h:mm a"
-                              )}
-                              {event.end_datetime &&
-                                ` – ${format(
-                                  parseISO(event.end_datetime),
+                            {event.type !== "hotel" && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                {format(
+                                  parseISO(event.start_datetime),
                                   "h:mm a"
-                                )}`}
-                            </div>
+                                )}
+                                {event.end_datetime &&
+                                  ` – ${format(
+                                    parseISO(event.end_datetime),
+                                    "h:mm a"
+                                  )}`}
+                              </div>
+                            )}
                             {event.location && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3 shrink-0" />

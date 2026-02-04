@@ -106,12 +106,14 @@ export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: bo
             <div className="min-w-0">
               <p className="truncate font-semibold leading-tight">{event.title}</p>
               <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {format(new Date(event.start_datetime), "h:mm a")}
-                  {event.end_datetime &&
-                    ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
-                </span>
+                {event.type !== "hotel" && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(event.start_datetime), "h:mm a")}
+                    {event.end_datetime &&
+                      ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
+                  </span>
+                )}
                 {event.location && (
                   (event.type === "restaurant" || event.type === "hotel") && event.description?.startsWith("https://www.google.com/maps") ? (
                     <a
