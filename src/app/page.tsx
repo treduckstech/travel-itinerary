@@ -10,7 +10,9 @@ import type { Trip } from "@/lib/types";
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: trips } = await supabase
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: trips, error: tripsError } = await supabase
     .from("trips")
     .select("*")
     .order("start_date", { ascending: true });
@@ -27,6 +29,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-10">
+      {/* DEBUG: remove after verifying */}
+      <pre className="rounded bg-muted p-3 text-xs overflow-auto">
+        {JSON.stringify({ userId: user?.id, email: user?.email, tripCount: trips?.length, error: tripsError }, null, 2)}
+      </pre>
       {hasTrips ? (
         <div className="flex items-end justify-between">
           <h1 className="font-display text-4xl">My Trips</h1>
