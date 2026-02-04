@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -63,7 +63,33 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const triedAutoExpand = useRef(false);
   const router = useRouter();
+
+  // Auto-expand detail on fillHeight cards if there's enough vertical space
+  useEffect(() => {
+    if (!fillHeight || !isExpandable(event) || triedAutoExpand.current) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const extraSpace = card.clientHeight - card.scrollHeight;
+    if (extraSpace > 100) {
+      triedAutoExpand.current = true;
+      setExpanded(true);
+    }
+  }, [fillHeight, event]);
+
+  // After auto-expanding, check if content actually fits; collapse if it overflows
+  useEffect(() => {
+    if (!fillHeight || !expanded || !triedAutoExpand.current) return;
+    const card = cardRef.current;
+    if (!card) return;
+    requestAnimationFrame(() => {
+      if (card.scrollHeight > card.clientHeight + 4) {
+        setExpanded(false);
+      }
+    });
+  }, [fillHeight, expanded]);
   const supabase = createClient();
   const config = typeConfig[event.type];
   const Icon = (event.type === "travel" && event.sub_type && subTypeIcons[event.sub_type])
@@ -93,7 +119,8 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
 
   return (
     <div
-      className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 ${expandable ? "cursor-pointer" : ""} ${fillHeight ? "h-full" : ""}`}
+      ref={cardRef}
+      className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 ${expandable ? "cursor-pointer" : ""} ${fillHeight ? "h-full overflow-hidden" : ""}`}
       onClick={handleCardClick}
     >
       <div className="flex gap-3">
