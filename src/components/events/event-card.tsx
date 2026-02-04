@@ -15,10 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { EventFormDialog } from "./event-form-dialog";
 import { DriveDetailCard } from "./drive-detail-card";
 import { RestaurantDetailCard } from "./restaurant-detail-card";
@@ -85,8 +81,17 @@ export function EventCard({ event }: { event: TripEvent }) {
     router.refresh();
   }
 
-  const cardContent = (
-    <>
+  function handleCardClick() {
+    if (expandable) {
+      setExpanded((prev) => !prev);
+    }
+  }
+
+  return (
+    <div
+      className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 ${expandable ? "cursor-pointer" : ""}`}
+      onClick={handleCardClick}
+    >
       <div className="flex gap-3">
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${config.iconBg}`}>
           <Icon className="h-4 w-4" />
@@ -173,7 +178,7 @@ export function EventCard({ event }: { event: TripEvent }) {
         </div>
       </div>
 
-      {expandable && expanded && (
+      {expanded && (
         <div className="ml-12">
           {event.type === "travel" && event.sub_type === "drive" && (
             <DriveDetailCard event={event} />
@@ -183,24 +188,6 @@ export function EventCard({ event }: { event: TripEvent }) {
           )}
         </div>
       )}
-    </>
-  );
-
-  if (expandable) {
-    return (
-      <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger asChild>
-          <div className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 cursor-pointer`}>
-            {cardContent}
-          </div>
-        </CollapsibleTrigger>
-      </Collapsible>
-    );
-  }
-
-  return (
-    <div className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30`}>
-      {cardContent}
     </div>
   );
 }
