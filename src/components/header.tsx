@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Plane } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 
 export async function Header() {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  if (pathname.startsWith("/admin")) return null;
+
   const supabase = await createClient();
   const {
     data: { user },

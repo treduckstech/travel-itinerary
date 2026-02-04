@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
+import { logActivity } from "@/lib/activity-log";
 
 interface DeleteTripButtonProps {
   tripId: string;
@@ -37,6 +38,7 @@ export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0 }: Dele
       return;
     }
     toast.success("Trip deleted");
+    logActivity("trip_deleted", { trip_id: tripId });
     router.push("/");
     router.refresh();
   }

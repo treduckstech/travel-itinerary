@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Trip } from "@/lib/types";
+import { logActivity } from "@/lib/activity-log";
 
 interface TripFormProps {
   trip?: Trip;
@@ -75,6 +76,7 @@ export function TripForm({ trip }: TripFormProps) {
         return;
       }
       toast.success("Trip created");
+      logActivity("trip_created", { trip_id: data.id, name, destination });
       router.push(`/trips/${data.id}`);
     }
 

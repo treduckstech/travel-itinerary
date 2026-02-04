@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Share2, Copy, Link2, Link2Off, Trash2, UserPlus } from "lucide-react";
 import type { TripShare } from "@/lib/types";
+import { logActivity } from "@/lib/activity-log";
 
 interface ShareDialogProps {
   tripId: string;
@@ -61,6 +62,7 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
     if (res.ok) {
       setEmail("");
       toast.success("Trip shared");
+      logActivity("share_created", { trip_id: tripId, shared_with: email.trim() });
       fetchShares();
     } else {
       const data = await res.json();
@@ -78,6 +80,7 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
     if (res.ok) {
       setShares((prev) => prev.filter((s) => s.id !== shareId));
       toast.success("Share removed");
+      logActivity("share_revoked", { trip_id: tripId, share_id: shareId });
     } else {
       toast.error("Failed to remove share");
     }
@@ -96,6 +99,7 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
     } else {
       setCurrentToken(token);
       toast.success("Public link created");
+      logActivity("public_link_generated", { trip_id: tripId });
       router.refresh();
     }
     setTokenLoading(false);
@@ -113,6 +117,7 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
     } else {
       setCurrentToken(null);
       toast.success("Public link revoked");
+      logActivity("public_link_revoked", { trip_id: tripId });
       router.refresh();
     }
     setTokenLoading(false);

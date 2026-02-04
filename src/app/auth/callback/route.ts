@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -8,8 +9,30 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { error, data } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      // Log signup or login
+      const serviceClient = createServiceClient();
+      const isNewUser =
+        data.user.created_at &&
+        Date.now() - new Date(data.user.created_at).getTime() < 60000;
+
+      const ip =
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        request.headers.get("x-real-ip") ??
+        null;
+
+      await serviceClient.from("activity_logs").insert({
+        user_id: data.user.id,
+        user_email: data.user.email,
+        action_type: isNewUser ? "signup" : "login",
+        action_details: {
+          provider: data.user.app_metadata?.provider ?? "unknown",
+        },
+        ip_address: ip,
+        user_agent: request.headers.get("user-agent") ?? null,
+      });
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

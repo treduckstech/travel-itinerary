@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Pencil, Search, Loader2, MapPin } from "lucide-react";
 import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant, PlaceResult } from "@/lib/types";
+import { logActivity } from "@/lib/activity-log";
 import { AirportCombobox } from "@/components/events/airport-combobox";
 import { StationCombobox } from "@/components/events/station-combobox";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
@@ -309,6 +310,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
         setLoading(false);
         return;
       }
+    }
+
+    if (!isEditing) {
+      logActivity("event_added", { trip_id: tripId, type, title: finalTitle });
     }
 
     setLoading(false);

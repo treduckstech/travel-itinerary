@@ -31,6 +31,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
+import { logActivity } from "@/lib/activity-log";
 
 const typeConfig: Record<
   EventType,
@@ -78,6 +79,7 @@ export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: bo
     }
     setDeleteOpen(false);
     toast.success("Event deleted");
+    logActivity("event_deleted", { event_id: event.id, title: event.title });
     router.refresh();
   }
 
