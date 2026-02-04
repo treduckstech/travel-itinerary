@@ -5,6 +5,7 @@ import type { TripEvent } from "@/lib/types";
 
 interface EventListProps {
   events: TripEvent[];
+  readOnly?: boolean;
 }
 
 const eventHints = [
@@ -14,7 +15,7 @@ const eventHints = [
   { icon: MapPin, label: "Activities", color: "bg-event-activity-bg text-event-activity" },
 ];
 
-export function EventList({ events }: EventListProps) {
+export function EventList({ events, readOnly }: EventListProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-center">
@@ -65,7 +66,7 @@ export function EventList({ events }: EventListProps) {
                   new Date(b.start_datetime).getTime()
               )
               .map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard key={event.id} event={event} readOnly={readOnly} />
               ))}
           </div>
         </div>

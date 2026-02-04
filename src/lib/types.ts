@@ -8,6 +8,17 @@ export interface Trip {
   destination: string;
   start_date: string;
   end_date: string;
+  user_id: string;
+  share_token: string | null;
+  created_at: string;
+}
+
+export interface TripShare {
+  id: string;
+  trip_id: string;
+  shared_with_email: string;
+  shared_with_user_id: string | null;
+  role: "editor";
   created_at: string;
 }
 

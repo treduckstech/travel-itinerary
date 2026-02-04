@@ -11,6 +11,7 @@ import { EventList } from "@/components/events/event-list";
 import { EventFormDialog } from "@/components/events/event-form-dialog";
 import { TodoList } from "@/components/todos/todo-list";
 import { DeleteTripButton } from "@/components/trips/delete-trip-button";
+import { ShareDialog } from "@/components/trips/share-dialog";
 import { MapPin, Calendar, Pencil } from "lucide-react";
 import type { Trip, TripEvent, Todo } from "@/lib/types";
 
@@ -22,6 +23,10 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: trip } = await supabase
     .from("trips")
     .select("*")
@@ -31,6 +36,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   if (!trip) notFound();
 
   const typedTrip = trip as Trip;
+  const isOwner = user?.id === typedTrip.user_id;
 
   const [{ data: events }, { data: todos }] = await Promise.all([
     supabase
@@ -69,13 +75,18 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/trips/${id}/edit`}>
-            <Button variant="outline" size="sm">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          </Link>
-          <DeleteTripButton tripId={id} eventCount={typedEvents.length} todoCount={typedTodos.length} />
+          {isOwner && (
+            <>
+              <ShareDialog tripId={id} shareToken={typedTrip.share_token} />
+              <Link href={`/trips/${id}/edit`}>
+                <Button variant="outline" size="sm">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </Link>
+              <DeleteTripButton tripId={id} eventCount={typedEvents.length} todoCount={typedTodos.length} />
+            </>
+          )}
         </div>
       </div>
 

@@ -13,9 +13,10 @@ import type { Todo } from "@/lib/types";
 interface TodoListProps {
   tripId: string;
   todos: Todo[];
+  readOnly?: boolean;
 }
 
-export function TodoList({ tripId, todos }: TodoListProps) {
+export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
   const [newTitle, setNewTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -101,17 +102,19 @@ export function TodoList({ tripId, todos }: TodoListProps) {
         </p>
       )}
 
-      <form onSubmit={handleAdd} className="flex gap-2">
-        <Input
-          placeholder="Add a prep item..."
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          maxLength={200}
-        />
-        <Button type="submit" size="sm" disabled={loading || !newTitle.trim()}>
-          <Plus className="h-4 w-4" />
-        </Button>
-      </form>
+      {!readOnly && (
+        <form onSubmit={handleAdd} className="flex gap-2">
+          <Input
+            placeholder="Add a prep item..."
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            maxLength={200}
+          />
+          <Button type="submit" size="sm" disabled={loading || !newTitle.trim()}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </form>
+      )}
 
       {sorted.length === 0 ? (
         <div className="py-6 text-center">
@@ -140,8 +143,8 @@ export function TodoList({ tripId, todos }: TodoListProps) {
             >
               <Checkbox
                 checked={todo.completed}
-                onCheckedChange={() => handleToggle(todo)}
-                disabled={busyIds.has(todo.id)}
+                onCheckedChange={() => !readOnly && handleToggle(todo)}
+                disabled={readOnly || busyIds.has(todo.id)}
               />
               <span
                 className={`min-w-0 flex-1 break-words text-sm ${
@@ -152,15 +155,17 @@ export function TodoList({ tripId, todos }: TodoListProps) {
               >
                 {todo.title}
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(todo.id)}
-                disabled={busyIds.has(todo.id)}
-                className="opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
+              {!readOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(todo.id)}
+                  disabled={busyIds.has(todo.id)}
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              )}
             </div>
           ))}
         </div>

@@ -56,7 +56,7 @@ function isExpandable(event: TripEvent): boolean {
   );
 }
 
-export function EventCard({ event }: { event: TripEvent }) {
+export function EventCard({ event, readOnly }: { event: TripEvent; readOnly?: boolean }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -136,39 +136,41 @@ export function EventCard({ event }: { event: TripEvent }) {
                   className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
                 />
               )}
-              <div
-                className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <EventFormDialog tripId={event.trip_id} event={event} />
-                <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="font-display text-xl">Delete Event</DialogTitle>
-                      <DialogDescription>
-                        This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-                        Cancel
+              {!readOnly && (
+                <div
+                  className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <EventFormDialog tripId={event.trip_id} event={event} />
+                  <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={deleteLoading}
-                      >
-                        {deleteLoading ? "Deleting..." : "Delete"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle className="font-display text-xl">Delete Event</DialogTitle>
+                        <DialogDescription>
+                          This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={handleDelete}
+                          disabled={deleteLoading}
+                        >
+                          {deleteLoading ? "Deleting..." : "Delete"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
             </div>
           </div>
 
