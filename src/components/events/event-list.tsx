@@ -92,6 +92,7 @@ export function EventList({ events, readOnly }: EventListProps) {
         style={{
           gridTemplateColumns: "3fr 2fr",
           gridTemplateRows: `repeat(${sortedDates.length}, auto)`,
+          columnGap: "24px",
         }}
       >
         {/* Full-width date header lines (behind everything) */}
