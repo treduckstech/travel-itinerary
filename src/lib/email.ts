@@ -14,10 +14,14 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
   const { Resend } = await import("resend");
   const resend = new Resend(apiKey);
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: "Travel Itinerary <notifications@treducks.tech>",
     to,
     subject,
     html,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.name} - ${error.message}`);
+  }
 }
