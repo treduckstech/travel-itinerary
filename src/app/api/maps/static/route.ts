@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   if (origin && destination) {
     // Drive mode: fetch directions for polyline, then render route map
-    const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&key=${apiKey}`;
+    const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving&key=${apiKey}`;
     try {
       const dirRes = await fetch(directionsUrl);
       const dirData = await dirRes.json();

@@ -42,7 +42,7 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
     : null;
 
   const directionsUrl = addresses
-    ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(addresses.origin)}&destination=${encodeURIComponent(addresses.destination)}`
+    ? `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${encodeURIComponent(addresses.origin)}&destination=${encodeURIComponent(addresses.destination)}`
     : null;
 
   const mapUrl = addresses

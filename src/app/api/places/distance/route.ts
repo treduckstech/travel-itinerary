@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
     url.searchParams.set("origins", origin.trim());
     url.searchParams.set("destinations", destination.trim());
+    url.searchParams.set("mode", "driving");
     url.searchParams.set("key", apiKey);
 
     const response = await fetch(url.toString());
