@@ -90,7 +90,7 @@ export function EventList({ events, readOnly }: EventListProps) {
       <div
         className={`hidden ${hasHotels ? "md:grid" : ""}`}
         style={{
-          gridTemplateColumns: "1fr 280px",
+          gridTemplateColumns: "3fr 2fr",
           gridTemplateRows: `repeat(${sortedDates.length}, auto)`,
           gap: "0 24px",
         }}
@@ -134,10 +134,10 @@ export function EventList({ events, readOnly }: EventListProps) {
               gridColumn: 2,
               gridRow: `${startRow} / ${endRow}`,
             }}
-            className="pt-12"
+            className="pt-12 pb-10"
           >
-            <div className="sticky top-4">
-              <EventCard event={hotel} readOnly={readOnly} showDateRange />
+            <div className="h-full">
+              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight />
             </div>
           </div>
         ))}

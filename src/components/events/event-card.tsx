@@ -59,7 +59,7 @@ function isExpandable(event: TripEvent): boolean {
   );
 }
 
-export function EventCard({ event, readOnly, showDateRange }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean }) {
+export function EventCard({ event, readOnly, showDateRange, fillHeight }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -93,7 +93,7 @@ export function EventCard({ event, readOnly, showDateRange }: { event: TripEvent
 
   return (
     <div
-      className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 ${expandable ? "cursor-pointer" : ""}`}
+      className={`group flex flex-col rounded-lg border border-l-4 ${config.border} bg-card p-4 transition-all duration-200 hover:bg-accent/30 ${expandable ? "cursor-pointer" : ""} ${fillHeight ? "h-full" : ""}`}
       onClick={handleCardClick}
     >
       <div className="flex gap-3">
