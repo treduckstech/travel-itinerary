@@ -508,20 +508,22 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
     if (restaurant.google_place_id) {
       setDescription(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.name)}&query_place_id=${restaurant.google_place_id}`);
-    } else if (restaurant.latitude && restaurant.longitude) {
-      setDescription(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`);
     } else {
-      setDescription("");
+      const queryParts = [restaurant.name, restaurant.address, restaurant.city, restaurant.state].filter(Boolean);
+      setDescription(queryParts.length > 0
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts.join(", "))}`
+        : "");
     }
   }
 
   function handleHotelSelect(place: PlaceResult) {
     setTitle(place.name);
     setLocation(place.address || "");
-    if (place.lat && place.lng) {
-      setDescription(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`);
+    if (place.id) {
+      setDescription(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`);
     } else {
-      setDescription("");
+      const query = [place.name, place.address].filter(Boolean).join(", ");
+      setDescription(query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "");
     }
   }
 
@@ -1219,10 +1221,11 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       value={location}
                       onSelect={(place: PlaceResult) => {
                         setLocation(place.address || place.name);
-                        if (place.lat && place.lng) {
-                          setDescription(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`);
+                        if (place.id) {
+                          setDescription(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`);
                         } else {
-                          setDescription("");
+                          const query = [place.name, place.address].filter(Boolean).join(", ");
+                          setDescription(query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "");
                         }
                       }}
                       onManualEntry={(name: string) => {
