@@ -62,9 +62,10 @@
 - [x] Renamed "Prep" / "Prep List" to "To Do" across all pages
 - [x] Due date support on to-do items (date picker, badge display, overdue styling, smart sorting)
 - [x] Daily cron reminder for to-dos due today (in-app notification + email via Resend)
+- [x] Optional description/note field on to-do items
 
 ## Bugs
-- [ ] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)
+- [x] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)
 
 ## Phase 3 - Enhancements
 - [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)

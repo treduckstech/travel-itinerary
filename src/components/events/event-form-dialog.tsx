@@ -409,10 +409,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setConfirmationNumber(`beneats:${restaurant.id}`);
     }
 
-    if (restaurant.latitude && restaurant.longitude) {
-      setDescription(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`);
-    } else if (restaurant.google_place_id) {
+    if (restaurant.google_place_id) {
       setDescription(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.name)}&query_place_id=${restaurant.google_place_id}`);
+    } else if (restaurant.latitude && restaurant.longitude) {
+      setDescription(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`);
     } else {
       setDescription("");
     }
