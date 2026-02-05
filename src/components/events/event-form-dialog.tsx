@@ -1213,14 +1213,34 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
               ) : type !== "travel" ? (
                 <div className="space-y-2">
                   <Label htmlFor="event-location">Location</Label>
-                  <Input
-                    id="event-location"
-                    placeholder="123 Main St"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    maxLength={200}
-                  />
-                  {(type === "restaurant" || type === "hotel") && description && description.startsWith("https://www.google.com/maps") && (
+                  {type === "activity" ? (
+                    <PlaceSearch
+                      id="event-location"
+                      value={location}
+                      onSelect={(place: PlaceResult) => {
+                        setLocation(place.address || place.name);
+                        if (place.lat && place.lng) {
+                          setDescription(`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`);
+                        } else {
+                          setDescription("");
+                        }
+                      }}
+                      onManualEntry={(name: string) => {
+                        setLocation(name);
+                        setDescription("");
+                      }}
+                      placeholder="Search places or addresses..."
+                    />
+                  ) : (
+                    <Input
+                      id="event-location"
+                      placeholder="123 Main St"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      maxLength={200}
+                    />
+                  )}
+                  {(type === "restaurant" || type === "hotel" || type === "activity") && description && description.startsWith("https://www.google.com/maps") && (
                     <a
                       href={description}
                       target="_blank"

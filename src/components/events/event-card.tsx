@@ -171,7 +171,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                   </span>
                 )}
                 {event.location && (
-                  (event.type === "restaurant" || event.type === "hotel") && event.description?.startsWith("https://www.google.com/maps") ? (
+                  (event.type === "restaurant" || event.type === "hotel" || event.type === "activity") && event.description?.startsWith("https://www.google.com/maps") ? (
                     <a
                       href={event.description}
                       target="_blank"
