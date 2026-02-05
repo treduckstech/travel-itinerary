@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -163,10 +163,7 @@ function SortableItem({
         disabled={readOnly || busyIds.has(todo.id)}
         className="mt-0.5"
       />
-      <div
-        className="min-w-0 flex-1"
-        onClick={() => !isEditing && handleStartEdit()}
-      >
+      <div className="min-w-0 flex-1">
         {isEditing ? (
           <div className="space-y-1">
             <Input
@@ -197,7 +194,7 @@ function SortableItem({
                 todo.completed
                   ? "text-muted-foreground line-through"
                   : ""
-              }${!readOnly ? " cursor-text" : ""}`
+              }`
             )}
             {todo.description &&
               (
@@ -228,15 +225,24 @@ function SortableItem({
         </span>
       )}
       {!readOnly && !isEditing && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(todo.id)}
-          disabled={busyIds.has(todo.id)}
-          className="opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-        </Button>
+        <div className="flex opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleStartEdit}
+            disabled={busyIds.has(todo.id)}
+          >
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(todo.id)}
+            disabled={busyIds.has(todo.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </Button>
+        </div>
       )}
     </div>
   );
