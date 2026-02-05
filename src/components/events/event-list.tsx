@@ -1,12 +1,13 @@
 import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { EventCard } from "./event-card";
 import { Route, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
-import type { TripEvent } from "@/lib/types";
+import type { TripEvent, EventAttachment } from "@/lib/types";
 import { parseTimezone, utcToNaiveDate } from "@/lib/timezone";
 
 interface EventListProps {
   events: TripEvent[];
   readOnly?: boolean;
+  attachmentsMap?: Record<string, EventAttachment[]>;
 }
 
 const eventHints = [
@@ -21,7 +22,7 @@ function isMultiDayHotel(event: TripEvent): boolean {
   return !isSameDay(parseISO(event.start_datetime), parseISO(event.end_datetime));
 }
 
-export function EventList({ events, readOnly }: EventListProps) {
+export function EventList({ events, readOnly, attachmentsMap }: EventListProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-center">
@@ -142,7 +143,7 @@ export function EventList({ events, readOnly }: EventListProps) {
                         new Date(b.start_datetime).getTime()
                     )
                     .map((event) => (
-                      <EventCard key={event.id} event={event} readOnly={readOnly} />
+                      <EventCard key={event.id} event={event} readOnly={readOnly} attachments={attachmentsMap?.[event.id]} />
                     ))}
                 </div>
               )}
@@ -161,7 +162,7 @@ export function EventList({ events, readOnly }: EventListProps) {
             className="relative z-10 pb-4 pt-8"
           >
             <div className="h-full">
-              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight />
+              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight attachments={attachmentsMap?.[hotel.id]} />
             </div>
           </div>
         ))}
@@ -188,7 +189,7 @@ export function EventList({ events, readOnly }: EventListProps) {
                     new Date(b.start_datetime).getTime()
                 )
                 .map((event) => (
-                  <EventCard key={event.id} event={event} readOnly={readOnly} />
+                  <EventCard key={event.id} event={event} readOnly={readOnly} attachments={attachmentsMap?.[event.id]} />
                 ))}
             </div>
           </div>

@@ -93,6 +93,16 @@ export interface Notification {
   created_at: string;
 }
 
+export interface EventAttachment {
+  id: string;
+  event_id: string;
+  file_name: string;
+  storage_path: string;
+  content_type: string;
+  file_size: number;
+  created_at: string;
+}
+
 export interface Todo {
   id: string;
   trip_id: string;

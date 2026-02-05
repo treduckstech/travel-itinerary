@@ -8,7 +8,7 @@ import { TripCalendar } from "@/components/calendar/trip-calendar";
 import { EventList } from "@/components/events/event-list";
 import { TodoList } from "@/components/todos/todo-list";
 import { MapPin, Calendar } from "lucide-react";
-import type { Trip, TripEvent, Todo } from "@/lib/types";
+import type { Trip, TripEvent, Todo, EventAttachment } from "@/lib/types";
 
 interface SharePageProps {
   params: Promise<{ token: string }>;
@@ -44,6 +44,25 @@ export default async function SharePage({ params }: SharePageProps) {
   const typedEvents = (events as TripEvent[] | null) ?? [];
   const typedTodos = (todos as Todo[] | null) ?? [];
 
+  // Fetch attachments for activity events
+  const activityEventIds = typedEvents
+    .filter((e) => e.type === "activity")
+    .map((e) => e.id);
+
+  const attachmentsMap: Record<string, EventAttachment[]> = {};
+  if (activityEventIds.length > 0) {
+    const { data: allAttachments } = await supabase
+      .from("event_attachments")
+      .select("*")
+      .in("event_id", activityEventIds)
+      .order("created_at", { ascending: true });
+
+    for (const att of (allAttachments as EventAttachment[] | null) ?? []) {
+      if (!attachmentsMap[att.event_id]) attachmentsMap[att.event_id] = [];
+      attachmentsMap[att.event_id].push(att);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -75,7 +94,7 @@ export default async function SharePage({ params }: SharePageProps) {
         </TabsList>
 
         <TabsContent value="itinerary" className="mt-6">
-          <EventList events={typedEvents} readOnly />
+          <EventList events={typedEvents} readOnly attachmentsMap={attachmentsMap} />
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">

@@ -20,6 +20,7 @@ import { DriveDetailCard } from "./drive-detail-card";
 import { TrainDetailCard } from "./train-detail-card";
 import { RestaurantDetailCard } from "./restaurant-detail-card";
 import { HotelDetailCard } from "./hotel-detail-card";
+import { ActivityDetailCard } from "./activity-detail-card";
 import { stations } from "@/data/stations";
 import {
   Plane,
@@ -33,7 +34,7 @@ import {
   Car,
   ChevronDown,
 } from "lucide-react";
-import type { TripEvent, EventType } from "@/lib/types";
+import type { TripEvent, EventType, EventAttachment } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 import { parseTimezone, formatInTimezone } from "@/lib/timezone";
 
@@ -65,19 +66,20 @@ function formatTrainLocation(location: string): string {
   return `${resolveStationCity(dep)} → ${resolveStationCity(arr)}`;
 }
 
-function isExpandable(event: TripEvent): boolean {
+function isExpandable(event: TripEvent, attachments?: EventAttachment[]): boolean {
   return (
     event.type === "restaurant" ||
     event.type === "hotel" ||
     (event.type === "travel" && event.sub_type === "drive") ||
-    (event.type === "travel" && event.sub_type === "train")
+    (event.type === "travel" && event.sub_type === "train") ||
+    (event.type === "activity" && !!(event.notes || (attachments && attachments.length > 0)))
   );
 }
 
-export function EventCard({ event, readOnly, showDateRange, fillHeight }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean }) {
+export function EventCard({ event, readOnly, showDateRange, fillHeight, attachments }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean; attachments?: EventAttachment[] }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [expanded, setExpanded] = useState(fillHeight && isExpandable(event));
+  const [expanded, setExpanded] = useState(fillHeight && isExpandable(event, attachments));
   const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -102,7 +104,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
   const Icon = (event.type === "travel" && event.sub_type && subTypeIcons[event.sub_type])
     ? subTypeIcons[event.sub_type]
     : config.icon;
-  const expandable = isExpandable(event);
+  const expandable = isExpandable(event, attachments);
 
   async function handleDelete() {
     setDeleteLoading(true);
@@ -257,6 +259,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight }: { even
           )}
           {event.type === "hotel" && (
             <HotelDetailCard event={event} />
+          )}
+          {event.type === "activity" && (
+            <ActivityDetailCard event={event} attachments={attachments} />
           )}
         </div>
       )}

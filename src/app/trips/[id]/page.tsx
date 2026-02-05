@@ -13,7 +13,7 @@ import { TodoList } from "@/components/todos/todo-list";
 import { DeleteTripButton } from "@/components/trips/delete-trip-button";
 import { ShareDialog } from "@/components/trips/share-dialog";
 import { MapPin, Calendar, Pencil } from "lucide-react";
-import type { Trip, TripEvent, Todo } from "@/lib/types";
+import type { Trip, TripEvent, Todo, EventAttachment } from "@/lib/types";
 
 interface TripDetailPageProps {
   params: Promise<{ id: string }>;
@@ -53,6 +53,25 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
   const typedEvents = (events as TripEvent[] | null) ?? [];
   const typedTodos = (todos as Todo[] | null) ?? [];
+
+  // Fetch attachments for activity events
+  const activityEventIds = typedEvents
+    .filter((e) => e.type === "activity")
+    .map((e) => e.id);
+
+  const attachmentsMap: Record<string, EventAttachment[]> = {};
+  if (activityEventIds.length > 0) {
+    const { data: allAttachments } = await supabase
+      .from("event_attachments")
+      .select("*")
+      .in("event_id", activityEventIds)
+      .order("created_at", { ascending: true });
+
+    for (const att of (allAttachments as EventAttachment[] | null) ?? []) {
+      if (!attachmentsMap[att.event_id]) attachmentsMap[att.event_id] = [];
+      attachmentsMap[att.event_id].push(att);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -103,7 +122,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
         </div>
 
         <TabsContent value="itinerary" className="mt-6">
-          <EventList events={typedEvents} />
+          <EventList events={typedEvents} attachmentsMap={attachmentsMap} />
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">

@@ -73,7 +73,7 @@
 - [x] Inline editing of to-do items (title + description)
 - [x] Clickable hyperlinks in to-do descriptions
 - [ ] Drag-and-drop event reordering
-- [ ] File/document attachments (boarding passes, confirmations)
+- [x] File/document attachments on Activity events (images + PDFs, up to 5 files, 10MB each)
 - [ ] Interactive map view (show event locations on a map)
 - [ ] Budget tracking per trip
 - [ ] Weather forecast integration for trip dates

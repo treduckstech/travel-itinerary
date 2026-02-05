@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -23,8 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Search, Loader2, MapPin } from "lucide-react";
-import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant, PlaceResult } from "@/lib/types";
+import { Plus, Pencil, Search, Loader2, MapPin, Paperclip, X, FileText, ImageIcon } from "lucide-react";
+import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant, PlaceResult, EventAttachment } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 import { AirportCombobox } from "@/components/events/airport-combobox";
 import { StationCombobox } from "@/components/events/station-combobox";
@@ -166,9 +166,91 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     return getBrowserTimezone();
   });
+  const [attachments, setAttachments] = useState<EventAttachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!event;
+
+  // Load existing attachments when editing an activity event
+  useEffect(() => {
+    if (isEditing && event.type === "activity" && open) {
+      supabase
+        .from("event_attachments")
+        .select("*")
+        .eq("event_id", event.id)
+        .order("created_at", { ascending: true })
+        .then(({ data }) => {
+          if (data) setAttachments(data as EventAttachment[]);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"];
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const MAX_ATTACHMENTS = 5;
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    const totalCount = attachments.length + pendingFiles.length + files.length;
+    if (totalCount > MAX_ATTACHMENTS) {
+      toast.error(`Maximum ${MAX_ATTACHMENTS} attachments allowed`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    for (const file of files) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error(`${file.name}: File type not allowed. Accepted: JPEG, PNG, WebP, HEIC, PDF`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name}: File too large. Maximum size is 10MB`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+    }
+    setPendingFiles((prev) => [...prev, ...files]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removePendingFile(index: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function removeExistingAttachment(attachmentId: string) {
+    const res = await fetch(`/api/attachments?id=${attachmentId}`, { method: "DELETE" });
+    if (res.ok) {
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+      toast.success("Attachment removed");
+    } else {
+      toast.error("Failed to remove attachment");
+    }
+  }
+
+  async function uploadPendingFiles(eventId: string) {
+    if (pendingFiles.length === 0) return;
+    for (const file of pendingFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("event_id", eventId);
+      formData.append("trip_id", tripId);
+      const res = await fetch("/api/attachments", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || `Failed to upload ${file.name}`);
+      }
+    }
+    setPendingFiles([]);
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   const isFlightLookupMode = type === "travel" && subType === "flight" && !manualEntry;
 
@@ -202,6 +284,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setTrainSeat("");
       setStartTimezone(getBrowserTimezone());
       setEndTimezone(getBrowserTimezone());
+      setAttachments([]);
+      setPendingFiles([]);
     }
     setError(null);
   }
@@ -362,6 +446,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       timezone: tzValue,
     };
 
+    let savedEventId: string;
+
     if (isEditing) {
       const { error } = await supabase
         .from("events")
@@ -373,14 +459,25 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
         setLoading(false);
         return;
       }
+      savedEventId = event.id;
     } else {
-      const { error } = await supabase.from("events").insert(eventData);
+      const { data: inserted, error } = await supabase
+        .from("events")
+        .insert(eventData)
+        .select("id")
+        .single();
 
-      if (error) {
-        setError(error.message);
+      if (error || !inserted) {
+        setError(error?.message ?? "Failed to create event");
         setLoading(false);
         return;
       }
+      savedEventId = inserted.id;
+    }
+
+    // Upload pending attachments for activity events
+    if (type === "activity" && pendingFiles.length > 0) {
+      await uploadPendingFiles(savedEventId);
     }
 
     if (!isEditing) {
@@ -926,7 +1023,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                         required
                       />
                     </div>
-                    {type !== "restaurant" && (
+                    {type !== "restaurant" && type !== "activity" && (
                       <div className="space-y-2">
                         <Label htmlFor="event-end">
                           {type === "travel"
@@ -1081,6 +1178,93 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       maxLength={1000}
                     />
                   </div>
+
+                  {type === "activity" && (
+                    <div className="space-y-2">
+                      <Label>Attachments</Label>
+                      {/* Existing attachments */}
+                      {attachments.length > 0 && (
+                        <div className="space-y-1.5">
+                          {attachments.map((att) => (
+                            <div
+                              key={att.id}
+                              className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-sm"
+                            >
+                              {att.content_type.startsWith("image/") ? (
+                                <ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              )}
+                              <span className="min-w-0 flex-1 truncate">{att.file_name}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {formatFileSize(att.file_size)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeExistingAttachment(att.id)}
+                                className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Pending files */}
+                      {pendingFiles.length > 0 && (
+                        <div className="space-y-1.5">
+                          {pendingFiles.map((file, i) => (
+                            <div
+                              key={`pending-${i}`}
+                              className="flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/10 px-3 py-1.5 text-sm"
+                            >
+                              {file.type.startsWith("image/") ? (
+                                <ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              )}
+                              <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {formatFileSize(file.size)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removePendingFile(i)}
+                                className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {attachments.length + pendingFiles.length < MAX_ATTACHMENTS && (
+                        <>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*,.pdf"
+                            multiple
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full"
+                          >
+                            <Paperclip className="mr-2 h-4 w-4" />
+                            Add files
+                          </Button>
+                        </>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Up to {MAX_ATTACHMENTS} files. Images or PDFs, 10MB max each.
+                      </p>
+                    </div>
+                  )}
 
                   <DialogFooter>
                     <Button type="submit" disabled={loading}>

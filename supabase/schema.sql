@@ -47,6 +47,18 @@ create table if not exists todos (
   created_at timestamptz default now() not null
 );
 
+-- Event attachments table
+create table if not exists event_attachments (
+  id uuid default uuid_generate_v4() primary key,
+  event_id uuid references events(id) on delete cascade not null,
+  file_name text not null,
+  storage_path text not null,
+  content_type text not null,
+  file_size integer not null,
+  created_at timestamptz default now() not null
+);
+
 -- Indexes for performance
 create index if not exists idx_events_trip_id on events(trip_id);
 create index if not exists idx_todos_trip_id on todos(trip_id);
+create index if not exists idx_event_attachments_event_id on event_attachments(event_id);
