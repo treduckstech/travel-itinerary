@@ -51,8 +51,12 @@ export async function GET(req: NextRequest) {
       staticUrl = `https://maps.googleapis.com/maps/api/staticmap?size=400x200&scale=2&markers=size:small|color:green|label:A|${encodeURIComponent(origin)}&markers=size:small|color:red|label:B|${encodeURIComponent(destination)}&key=${apiKey}`;
     }
   } else if (lat && lng) {
-    // Restaurant mode: single marker
+    // Single marker by coordinates
     staticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=400x200&scale=2&markers=color:red|${lat},${lng}&key=${apiKey}`;
+  } else if (searchParams.get("address")) {
+    // Single marker by address
+    const address = searchParams.get("address")!;
+    staticUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=${zoom}&size=400x200&scale=2&markers=color:red|${encodeURIComponent(address)}&key=${apiKey}`;
   } else {
     return NextResponse.json(
       { error: "Missing required parameters" },

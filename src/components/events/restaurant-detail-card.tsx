@@ -4,13 +4,6 @@ import { useState } from "react";
 import { ExternalLink, MapPin, Star, DollarSign, UtensilsCrossed } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
 
-function parseLatLng(description: string | null): { lat: string; lng: string } | null {
-  if (!description) return null;
-  const match = description.match(/query=([-\d.]+),([-\d.]+)/);
-  if (!match) return null;
-  return { lat: match[1], lng: match[2] };
-}
-
 function parseBenEatsId(confirmationNumber: string | null): string | null {
   if (!confirmationNumber?.startsWith("beneats:")) return null;
   return confirmationNumber.slice(8);
@@ -30,16 +23,15 @@ function parseNotesMeta(notes: string | null): { cuisine?: string; price?: strin
 
 export function RestaurantDetailCard({ event }: { event: TripEvent }) {
   const [mapError, setMapError] = useState(false);
-  const latLng = parseLatLng(event.description);
   const benEatsId = parseBenEatsId(event.confirmation_number);
   const meta = parseNotesMeta(event.notes);
   const googleMapsUrl = event.description?.startsWith("https://www.google.com/maps") ? event.description : null;
 
-  const mapUrl = latLng
-    ? `/api/maps/static?lat=${latLng.lat}&lng=${latLng.lng}&zoom=15`
+  const mapUrl = event.location
+    ? `/api/maps/static?address=${encodeURIComponent(event.location)}&zoom=15`
     : null;
 
-  const hasContent = mapUrl || event.location || meta.cuisine || meta.price || meta.rating || benEatsId || googleMapsUrl;
+  const hasContent = mapUrl || meta.cuisine || meta.price || meta.rating || benEatsId || googleMapsUrl;
   if (!hasContent) return null;
 
   return (
@@ -58,13 +50,6 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-        {event.location && (
-          <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5" />
-            {event.location}
-          </span>
-        )}
-
         {meta.cuisine && (
           <span className="flex items-center gap-1.5">
             <UtensilsCrossed className="h-3.5 w-3.5" />
