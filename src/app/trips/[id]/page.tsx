@@ -56,7 +56,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
   // Fetch attachments for activity events
   const activityEventIds = typedEvents
-    .filter((e) => e.type === "activity")
+    .filter((e) => e.type === "activity" || (e.type === "travel" && e.sub_type === "train"))
     .map((e) => e.id);
 
   const attachmentsMap: Record<string, EventAttachment[]> = {};

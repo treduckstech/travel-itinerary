@@ -252,7 +252,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
             <DriveDetailCard event={event} />
           )}
           {event.type === "travel" && event.sub_type === "train" && (
-            <TrainDetailCard event={event} />
+            <TrainDetailCard event={event} attachments={attachments} />
           )}
           {event.type === "restaurant" && (
             <RestaurantDetailCard event={event} />
