@@ -70,7 +70,7 @@ export default async function SharePage({ params }: SharePageProps) {
           <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="todos">
-            Prep List ({typedTodos.length})
+            To Do ({typedTodos.length})
           </TabsTrigger>
         </TabsList>
 

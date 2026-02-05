@@ -99,5 +99,6 @@ export interface Todo {
   title: string;
   completed: boolean;
   due_date: string | null;
+  reminder_sent: boolean;
   created_at: string;
 }

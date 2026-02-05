@@ -8,7 +8,7 @@
 - [x] Trip CRUD (create, view, edit, delete)
 - [x] Event CRUD (flights, hotels, restaurants, activities, drives)
 - [x] Calendar view with event highlighting
-- [x] Prep todo list with completion toggle
+- [x] To-do list with completion toggle
 - [x] Day-grouped event itinerary view
 
 ## Completed (Phase 2)
@@ -59,6 +59,9 @@
 - [x] Expandable train detail card with route visualization
 - [x] Italian train stations (Cinque Terre, Lake Como, Sicily, tourist destinations)
 - [x] Station code to city name resolution on train cards
+- [x] Renamed "Prep" / "Prep List" to "To Do" across all pages
+- [x] Due date support on to-do items (date picker, badge display, overdue styling, smart sorting)
+- [x] Daily cron reminder for to-dos due today (in-app notification + email via Resend)
 
 ## Bugs
 - [ ] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)

@@ -80,7 +80,7 @@ export function NotificationBell() {
     const data = notification.data as Record<string, string>;
     if (notification.type === "friend_request" || notification.type === "friend_request_accepted") {
       router.push("/friends");
-    } else if (notification.type === "trip_shared" && data.trip_id) {
+    } else if ((notification.type === "trip_shared" || notification.type === "todo_due") && data.trip_id) {
       router.push(`/trips/${data.trip_id}`);
     }
     setOpen(false);

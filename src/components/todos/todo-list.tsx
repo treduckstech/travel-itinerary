@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { format, isAfter, startOfDay, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +19,7 @@ interface TodoListProps {
 
 export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
   const [newTitle, setNewTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const router = useRouter();
@@ -43,6 +45,7 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
     const { error } = await supabase.from("todos").insert({
       trip_id: tripId,
       title: newTitle.trim(),
+      due_date: dueDate || null,
     });
 
     if (error) {
@@ -52,6 +55,7 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
     }
 
     setNewTitle("");
+    setDueDate("");
     setLoading(false);
     router.refresh();
   }
@@ -87,8 +91,30 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
     router.refresh();
   }
 
+  function isOverdue(todo: Todo): boolean {
+    if (!todo.due_date || todo.completed) return false;
+    const today = startOfDay(new Date());
+    const due = parseISO(todo.due_date + "T00:00:00");
+    return isAfter(today, due);
+  }
+
   const sorted = [...todos].sort((a, b) => {
+    // Completed items always last
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
+
+    // Among uncompleted: overdue first
+    const aOverdue = isOverdue(a);
+    const bOverdue = isOverdue(b);
+    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+
+    // Then by due date (items with date before items without)
+    const aDate = a.due_date;
+    const bDate = b.due_date;
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    if (aDate && bDate) return aDate.localeCompare(bDate);
+
+    // Finally by created_at
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 
@@ -105,10 +131,16 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
       {!readOnly && (
         <form onSubmit={handleAdd} className="flex gap-2">
           <Input
-            placeholder="Add a prep item..."
+            placeholder="Add a to-do..."
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             maxLength={200}
+          />
+          <Input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-[160px] shrink-0"
           />
           <Button type="submit" size="sm" disabled={loading || !newTitle.trim()}>
             <Plus className="h-4 w-4" />
@@ -155,6 +187,19 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
               >
                 {todo.title}
               </span>
+              {todo.due_date && (
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                    isOverdue(todo)
+                      ? "bg-destructive/10 text-destructive"
+                      : todo.completed
+                        ? "text-muted-foreground"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  Due {format(parseISO(todo.due_date + "T00:00:00"), "MMM d")}
+                </span>
+              )}
               {!readOnly && (
                 <Button
                   variant="ghost"

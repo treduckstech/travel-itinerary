@@ -96,7 +96,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="todos">
-              Prep ({typedTodos.length})
+              To Do ({typedTodos.length})
             </TabsTrigger>
           </TabsList>
           <EventFormDialog tripId={id} />
