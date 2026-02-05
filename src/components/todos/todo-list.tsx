@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import type { Todo } from "@/lib/types";
@@ -19,6 +20,7 @@ interface TodoListProps {
 
 export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
   const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -45,6 +47,7 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
     const { error } = await supabase.from("todos").insert({
       trip_id: tripId,
       title: newTitle.trim(),
+      description: newDescription.trim() || null,
       due_date: dueDate || null,
     });
 
@@ -55,6 +58,7 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
     }
 
     setNewTitle("");
+    setNewDescription("");
     setDueDate("");
     setLoading(false);
     router.refresh();
@@ -129,22 +133,32 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
       )}
 
       {!readOnly && (
-        <form onSubmit={handleAdd} className="flex gap-2">
-          <Input
-            placeholder="Add a to-do..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            maxLength={200}
+        <form onSubmit={handleAdd} className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add a to-do..."
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              maxLength={200}
+            />
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-[160px] shrink-0"
+            />
+            <Button type="submit" size="sm" disabled={loading || !newTitle.trim()}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <Textarea
+            placeholder="Add a note (optional)"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            maxLength={500}
+            rows={2}
+            className="resize-none text-sm"
           />
-          <Input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="w-[160px] shrink-0"
-          />
-          <Button type="submit" size="sm" disabled={loading || !newTitle.trim()}>
-            <Plus className="h-4 w-4" />
-          </Button>
         </form>
       )}
 
@@ -177,16 +191,30 @@ export function TodoList({ tripId, todos, readOnly }: TodoListProps) {
                 checked={todo.completed}
                 onCheckedChange={() => !readOnly && handleToggle(todo)}
                 disabled={readOnly || busyIds.has(todo.id)}
+                className="mt-0.5"
               />
-              <span
-                className={`min-w-0 flex-1 break-words text-sm ${
-                  todo.completed
-                    ? "text-muted-foreground line-through"
-                    : ""
-                }`}
-              >
-                {todo.title}
-              </span>
+              <div className="min-w-0 flex-1">
+                <span
+                  className={`break-words text-sm ${
+                    todo.completed
+                      ? "text-muted-foreground line-through"
+                      : ""
+                  }`}
+                >
+                  {todo.title}
+                </span>
+                {todo.description && (
+                  <p
+                    className={`mt-0.5 break-words text-xs ${
+                      todo.completed
+                        ? "text-muted-foreground/60 line-through"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {todo.description}
+                  </p>
+                )}
+              </div>
               {todo.due_date && (
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${

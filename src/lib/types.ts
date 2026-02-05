@@ -97,6 +97,7 @@ export interface Todo {
   id: string;
   trip_id: string;
   title: string;
+  description: string | null;
   completed: boolean;
   due_date: string | null;
   reminder_sent: boolean;

@@ -39,6 +39,7 @@ create table if not exists todos (
   id uuid default uuid_generate_v4() primary key,
   trip_id uuid references trips(id) on delete cascade not null,
   title text not null,
+  description text,
   completed boolean default false not null,
   due_date date,
   reminder_sent boolean default false not null,

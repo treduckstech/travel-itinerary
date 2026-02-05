@@ -16,6 +16,7 @@
 - `src/app/admin/` - Admin console (dashboard, users, analytics, activity log)
 - `src/app/api/admin/` - Admin API routes (stats, users, analytics, activity log)
 - `src/app/api/` - Public API routes (trips, flights, places, maps, restaurants, activity log, friends, notifications)
+- `src/app/api/cron/` - Vercel Cron jobs (todo reminders)
 - `src/app/friends/` - Friends management page
 - `src/components/` - React components organized by domain (admin, auth, trips, events, calendar, todos, notifications, ui)
 - `src/components/admin/` - Admin components (sidebar, stat cards, pagination, analytics charts, activity log)
@@ -37,6 +38,7 @@
 - Friends system uses `friendships` table with pending/accepted/declined status
 - Notifications created via service client, polled by client every 30s
 - Email via Resend (`src/lib/email.ts`) - fire-and-forget, no-ops without RESEND_API_KEY
+- Vercel Cron jobs configured in `vercel.json` — todo reminder runs daily at 9 AM UTC, authenticated via `CRON_SECRET`
 
 ## Travel Event Sub-types
 Travel events have a `sub_type` field: `flight`, `train`, `ferry`, or `drive`.
@@ -82,6 +84,7 @@ Each travel sub-type has an expandable detail card:
 - `BENEATS_API_KEY` - BenEats API key for restaurant search (optional, server-side only)
 - `GOOGLE_MAPS_API_KEY` - Google Maps API key for place search and drive time calculation (optional, server-side only; requires Places API and Distance Matrix API)
 - `RESEND_API_KEY` - Resend API key for email notifications (optional, server-side only)
+- `CRON_SECRET` - Secret for Vercel Cron job authentication (auto-provided by Vercel on Pro plans)
 
 ## Tracking
 - Feature roadmap and pending tasks are tracked in `TODO.md` — always keep it in sync when completing work or adding new tasks
