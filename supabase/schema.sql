@@ -43,6 +43,7 @@ create table if not exists todos (
   completed boolean default false not null,
   due_date date,
   reminder_sent boolean default false not null,
+  sort_order integer default 0 not null,
   created_at timestamptz default now() not null
 );
 

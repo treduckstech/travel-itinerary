@@ -69,6 +69,9 @@
 
 ## Phase 3 - Enhancements
 - [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)
+- [x] Drag-and-drop to-do reordering (with @dnd-kit)
+- [x] Inline editing of to-do items (title + description)
+- [x] Clickable hyperlinks in to-do descriptions
 - [ ] Drag-and-drop event reordering
 - [ ] File/document attachments (boarding passes, confirmations)
 - [ ] Interactive map view (show event locations on a map)

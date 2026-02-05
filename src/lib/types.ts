@@ -101,5 +101,6 @@ export interface Todo {
   completed: boolean;
   due_date: string | null;
   reminder_sent: boolean;
+  sort_order: number;
   created_at: string;
 }

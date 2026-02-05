@@ -48,7 +48,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
       .from("todos")
       .select("*")
       .eq("trip_id", id)
-      .order("created_at", { ascending: true }),
+      .order("sort_order", { ascending: true }),
   ]);
 
   const typedEvents = (events as TripEvent[] | null) ?? [];
