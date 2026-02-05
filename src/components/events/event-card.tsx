@@ -72,7 +72,7 @@ function isExpandable(event: TripEvent, attachments?: EventAttachment[]): boolea
     event.type === "hotel" ||
     (event.type === "travel" && event.sub_type === "drive") ||
     (event.type === "travel" && event.sub_type === "train") ||
-    (event.type === "activity" && !!(event.notes || (attachments && attachments.length > 0)))
+    (event.type === "activity" && !!(event.notes || event.description?.startsWith("https://www.google.com/maps") || (attachments && attachments.length > 0)))
   );
 }
 
