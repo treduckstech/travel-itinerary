@@ -90,7 +90,7 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {benEatsId && (
           <a
-            href={`https://beneats.ai/restaurants/${benEatsId}`}
+            href={`https://beneats.ai/restaurant/${benEatsId}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
