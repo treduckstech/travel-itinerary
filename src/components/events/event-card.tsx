@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import type { TripEvent, EventType, EventAttachment } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
-import { parseTimezone, formatInTimezone } from "@/lib/timezone";
+import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
 
 const typeConfig: Record<
   EventType,
@@ -143,7 +143,15 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
               <p className="truncate font-semibold leading-tight">{event.title}</p>
               {showDateRange && event.end_datetime && (
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  {format(new Date(event.start_datetime), "MMM d")} &ndash; {format(new Date(event.end_datetime), "MMM d")}
+                  {(() => {
+                    const tz = parseTimezone(event.timezone);
+                    if (tz.start) {
+                      const startDate = utcToNaiveDate(event.start_datetime, tz.start);
+                      const endDate = utcToNaiveDate(event.end_datetime!, tz.end || tz.start);
+                      return `${format(new Date(startDate + "T00:00:00"), "MMM d")} – ${format(new Date(endDate + "T00:00:00"), "MMM d")}`;
+                    }
+                    return `${format(new Date(event.start_datetime), "MMM d")} – ${format(new Date(event.end_datetime!), "MMM d")}`;
+                  })()}
                 </p>
               )}
               <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
