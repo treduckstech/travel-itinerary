@@ -71,11 +71,19 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
   });
   const [location, setLocation] = useState(event?.location ?? "");
-  const [notes, setNotes] = useState(
-    [event?.confirmation_number, event?.description, event?.notes]
+  const [notes, setNotes] = useState(() => {
+    if (!event) return "";
+    const descriptionIsStructured =
+      event.description?.startsWith("https://www.google.com/maps") ||
+      event.description?.includes("|||");
+    return [
+      event.confirmation_number,
+      descriptionIsStructured ? null : event.description,
+      event.notes,
+    ]
       .filter(Boolean)
-      .join("\n") || ""
-  );
+      .join("\n") || "";
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(false);
