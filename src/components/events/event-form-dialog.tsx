@@ -33,6 +33,7 @@ import { HotelSearch } from "@/components/events/hotel-search";
 import { PlaceSearch } from "@/components/events/place-search";
 import { TimezoneCombobox } from "@/components/events/timezone-combobox";
 import { parseTimezone, buildTimezone, getBrowserTimezone, naiveToUtc, utcToNaive } from "@/lib/timezone";
+import { extractCityFromAddress } from "@/lib/address";
 
 interface EventFormDialogProps {
   tripId: string;
@@ -181,6 +182,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
+  const [shoppingStore, setShoppingStore] = useState<PlaceResult | null>(null);
+  const [shoppingCategory, setShoppingCategory] = useState("");
   const isEditing = !!event;
 
   // Load existing attachments when editing an activity event
@@ -296,6 +299,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setEndTimezone(getBrowserTimezone());
       setAttachments([]);
       setPendingFiles([]);
+      setShoppingStore(null);
+      setShoppingCategory("");
     }
     setError(null);
   }
@@ -414,8 +419,104 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     return null;
   }
 
+  async function handleShoppingCreate() {
+    setLoading(true);
+    setError(null);
+
+    if (!shoppingStore) {
+      setError("Please search for a store");
+      setLoading(false);
+      return;
+    }
+
+    // Extract city from store address
+    const city = shoppingStore.address
+      ? extractCityFromAddress(shoppingStore.address)
+      : null;
+    const cityTitle = city || "Shopping";
+
+    // Find existing shopping event for this city in this trip
+    const { data: existing } = await supabase
+      .from("events")
+      .select("id")
+      .eq("trip_id", tripId)
+      .eq("type", "shopping")
+      .ilike("title", cityTitle)
+      .limit(1)
+      .maybeSingle();
+
+    let parentEventId: string;
+
+    if (existing) {
+      parentEventId = existing.id;
+    } else {
+      const { data: inserted, error: insertError } = await supabase
+        .from("events")
+        .insert({
+          trip_id: tripId,
+          type: "shopping" as EventType,
+          sub_type: null,
+          title: cityTitle,
+          description: null,
+          start_datetime: new Date().toISOString(),
+          end_datetime: null,
+          location: null,
+          confirmation_number: null,
+          notes: null,
+          timezone: null,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !inserted) {
+        setError(insertError?.message ?? "Failed to create shopping event");
+        setLoading(false);
+        return;
+      }
+      parentEventId = inserted.id;
+      logActivity("event_added", { trip_id: tripId, type: "shopping", title: cityTitle });
+    }
+
+    // Build Google Maps URL
+    const googleUrl = shoppingStore.id
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shoppingStore.name)}&query_place_id=${shoppingStore.id}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([shoppingStore.name, shoppingStore.address].filter(Boolean).join(", "))}`;
+
+    // Get current store count for sort_order
+    const { count } = await supabase
+      .from("shopping_stores")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", parentEventId);
+
+    const { error: storeError } = await supabase.from("shopping_stores").insert({
+      event_id: parentEventId,
+      name: shoppingStore.name,
+      address: shoppingStore.address || null,
+      google_maps_url: googleUrl,
+      category: shoppingCategory || null,
+      sort_order: count ?? 0,
+    });
+
+    if (storeError) {
+      setError("Failed to add store");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    setOpen(false);
+    resetForm();
+    toast.success(`${shoppingStore.name} added${city ? ` to shopping in ${city}` : ""}`);
+    router.refresh();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (type === "shopping" && !isEditing) {
+      return handleShoppingCreate();
+    }
+
     setLoading(true);
     setError(null);
 
@@ -570,7 +671,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     if (type === "hotel") return "Hotel Name";
     if (type === "restaurant") return "Restaurant";
-    if (type === "shopping") return "City (optional)";
+    if (type === "shopping") return isEditing ? "City" : "Store";
     return "Activity";
   }
 
@@ -582,7 +683,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       if (subType === "drive") return "Drive to coast";
     }
     if (type === "hotel") return "Grand Hotel";
-    if (type === "shopping") return "Auto-detected from stores";
+    if (type === "shopping") return "Florence";
     return "City Walking Tour";
   }
 
@@ -609,7 +710,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
-            {isEditing ? "Edit Event" : "Add Event"}
+            {isEditing ? "Edit Event" : type === "shopping" ? "Add Store" : "Add Event"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -687,6 +788,14 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     onSelect={handleHotelSelect}
                     onManualEntry={(name) => setTitle(name)}
                     placeholder="Search hotels..."
+                  />
+                ) : type === "shopping" && !isEditing ? (
+                  <PlaceSearch
+                    id="event-title"
+                    value={shoppingStore?.name ?? ""}
+                    onSelect={(place: PlaceResult) => setShoppingStore(place)}
+                    onManualEntry={(name: string) => setShoppingStore({ id: "", name, address: "" })}
+                    placeholder="Search for a store..."
                   />
                 ) : (
                   <Input
@@ -1156,6 +1265,26 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </>
               ) : null}
 
+              {type === "shopping" && !isEditing && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="shopping-category">Category (optional)</Label>
+                    <Input
+                      id="shopping-category"
+                      placeholder="Fashion, Souvenirs, Gifts..."
+                      value={shoppingCategory}
+                      onChange={(e) => setShoppingCategory(e.target.value)}
+                      maxLength={50}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={loading || !shoppingStore}>
+                      {loading ? "Adding..." : "Add Store"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+
               {type === "travel" && subType === "flight" ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1234,10 +1363,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
                 </>
-              ) : type !== "travel" ? (
+              ) : type !== "travel" && type !== "shopping" ? (
                 <div className="space-y-2">
                   <Label htmlFor="event-location">Location</Label>
-                  {type === "activity" || type === "shopping" ? (
+                  {type === "activity" ? (
                     <PlaceSearch
                       id="event-location"
                       value={location}
@@ -1265,7 +1394,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       maxLength={200}
                     />
                   )}
-                  {(type === "restaurant" || type === "hotel" || type === "activity" || type === "shopping") && description && description.startsWith("https://www.google.com/maps") && (
+                  {(type === "restaurant" || type === "hotel" || type === "activity") && description && description.startsWith("https://www.google.com/maps") && (
                     <a
                       href={description}
                       target="_blank"
@@ -1293,7 +1422,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               )}
 
-              {!(type === "travel" && subType === "train") && (
+              {!(type === "travel" && subType === "train") && !(type === "shopping" && !isEditing) && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="event-notes">Notes</Label>
