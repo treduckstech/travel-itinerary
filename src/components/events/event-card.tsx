@@ -158,9 +158,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                   })()}
                 </p>
               )}
-              <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
                 {event.type !== "hotel" && event.type !== "shopping" && (
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 shrink-0">
                     <Clock className="h-3 w-3" />
                     {(() => {
                       const tz = parseTimezone(event.timezone);
@@ -189,13 +189,13 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 truncate hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 min-w-0 hover:text-foreground transition-colors"
                     >
                       <MapPin className="h-3 w-3 shrink-0" />
                       <span className="truncate">{event.location}</span>
                     </a>
                   ) : (
-                    <span className="flex items-center gap-1 truncate">
+                    <span className="flex items-center gap-1 min-w-0">
                       <MapPin className="h-3 w-3 shrink-0" />
                       <span className="truncate">
                         {event.type === "travel" && event.sub_type === "train"

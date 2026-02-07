@@ -180,9 +180,9 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
       <div
         className={`hidden ${hasRightColumn ? "lg:grid" : ""}`}
         style={{
-          gridTemplateColumns: shoppingEvents.length > 0 ? "1fr 2fr 1fr" : "1fr 2fr",
+          gridTemplateColumns: shoppingEvents.length > 0 ? "minmax(0, 2fr) minmax(0, 3fr) minmax(0, 2fr)" : "minmax(0, 2fr) minmax(0, 3fr)",
           gridTemplateRows: `repeat(${sortedDates.length + (unmatchedShopping.length > 0 ? 1 : 0)}, auto)`,
-          columnGap: "24px",
+          columnGap: "16px",
         }}
       >
         {/* Full-width date header lines (behind everything) */}
