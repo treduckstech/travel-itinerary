@@ -16,6 +16,7 @@ import {
   Ship,
   Car,
   ShoppingBag,
+  Wine,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
@@ -26,6 +27,7 @@ const typeIcons: Record<EventType, React.ElementType> = {
   restaurant: UtensilsCrossed,
   activity: MapPin,
   shopping: ShoppingBag,
+  bars: Wine,
 };
 
 const subTypeIcons: Record<string, React.ElementType> = {
@@ -41,6 +43,7 @@ const typeColors: Record<EventType, string> = {
   restaurant: "bg-event-restaurant-bg text-event-restaurant",
   activity: "bg-event-activity-bg text-event-activity",
   shopping: "bg-event-shopping-bg text-event-shopping",
+  bars: "bg-event-bars-bg text-event-bars",
 };
 
 const DAYS_PER_PAGE = 5;
@@ -67,8 +70,8 @@ export function TripCalendar({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(startDate);
   const [page, setPage] = useState(0);
 
-  // Exclude shopping events (they have no meaningful dates)
-  const calendarEvents = events.filter((e) => e.type !== "shopping");
+  // Exclude shopping and bars events (they have no meaningful dates)
+  const calendarEvents = events.filter((e) => e.type !== "shopping" && e.type !== "bars");
 
   const eventDates = calendarEvents.map((e) => parseISO(e.start_datetime));
 
@@ -174,7 +177,7 @@ export function TripCalendar({
                             <p className="truncate font-medium leading-none">
                               {event.title}
                             </p>
-                            {event.type !== "hotel" && event.type !== "shopping" && (
+                            {event.type !== "hotel" && event.type !== "shopping" && event.type !== "bars" && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Clock className="h-3 w-3 shrink-0" />
                                 {(() => {

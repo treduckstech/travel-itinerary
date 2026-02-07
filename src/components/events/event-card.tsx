@@ -22,6 +22,7 @@ import { RestaurantDetailCard } from "./restaurant-detail-card";
 import { HotelDetailCard } from "./hotel-detail-card";
 import { ActivityDetailCard } from "./activity-detail-card";
 import { ShoppingDetailCard } from "./shopping-detail-card";
+import { BarDetailCard } from "./bar-detail-card";
 import { stations } from "@/data/stations";
 import {
   Plane,
@@ -35,8 +36,9 @@ import {
   Car,
   ChevronDown,
   ShoppingBag,
+  Wine,
 } from "lucide-react";
-import type { TripEvent, EventType, EventAttachment, ShoppingStore } from "@/lib/types";
+import type { TripEvent, EventType, EventAttachment, ShoppingStore, BarVenue } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
 import { extractCityFromAddress } from "@/lib/address";
@@ -50,6 +52,7 @@ const typeConfig: Record<
   restaurant: { icon: UtensilsCrossed, border: "border-l-event-restaurant", iconBg: "bg-event-restaurant-bg text-event-restaurant" },
   activity: { icon: MapPin, border: "border-l-event-activity", iconBg: "bg-event-activity-bg text-event-activity" },
   shopping: { icon: ShoppingBag, border: "border-l-event-shopping", iconBg: "bg-event-shopping-bg text-event-shopping" },
+  bars: { icon: Wine, border: "border-l-event-bars", iconBg: "bg-event-bars-bg text-event-bars" },
 };
 
 const subTypeIcons: Record<string, React.ElementType> = {
@@ -92,18 +95,38 @@ function getShoppingDisplayTitle(event: TripEvent, stores?: ShoppingStore[]): st
   return "Shopping";
 }
 
+function getBarsDisplayTitle(event: TripEvent, venues?: BarVenue[]): string {
+  if (event.title && event.title !== "Bars") {
+    return `Bars in ${event.title}`;
+  }
+  if (venues?.length) {
+    for (const venue of venues) {
+      if (venue.address) {
+        const city = extractCityFromAddress(venue.address);
+        if (city) return `Bars in ${city}`;
+      }
+    }
+  }
+  if (event.location) {
+    const city = extractCityFromAddress(event.location);
+    if (city) return `Bars in ${city}`;
+  }
+  return "Bars";
+}
+
 function isExpandable(event: TripEvent, attachments?: EventAttachment[]): boolean {
   return (
     event.type === "restaurant" ||
     event.type === "hotel" ||
     event.type === "shopping" ||
+    event.type === "bars" ||
     (event.type === "travel" && event.sub_type === "drive") ||
     (event.type === "travel" && event.sub_type === "train") ||
     (event.type === "activity" && !!(event.notes || event.description?.startsWith("https://www.google.com/maps") || (attachments && attachments.length > 0)))
   );
 }
 
-export function EventCard({ event, readOnly, showDateRange, fillHeight, attachments, shoppingStores }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean; attachments?: EventAttachment[]; shoppingStores?: ShoppingStore[] }) {
+export function EventCard({ event, readOnly, showDateRange, fillHeight, attachments, shoppingStores, barVenues }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean; attachments?: EventAttachment[]; shoppingStores?: ShoppingStore[]; barVenues?: BarVenue[] }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expanded, setExpanded] = useState(fillHeight && isExpandable(event, attachments));
@@ -168,9 +191,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate font-semibold leading-tight">
-                {event.type === "shopping" ? getShoppingDisplayTitle(event, shoppingStores) : event.title}
+                {event.type === "shopping" ? getShoppingDisplayTitle(event, shoppingStores) : event.type === "bars" ? getBarsDisplayTitle(event, barVenues) : event.title}
               </p>
-              {showDateRange && event.type !== "shopping" && event.end_datetime && (
+              {showDateRange && event.type !== "shopping" && event.type !== "bars" && event.end_datetime && (
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {(() => {
                     const tz = parseTimezone(event.timezone);
@@ -187,6 +210,12 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                 shoppingStores && shoppingStores.length > 0 && (
                   <p className="mt-1 text-sm text-muted-foreground">
                     {shoppingStores.length} {shoppingStores.length === 1 ? "store" : "stores"}
+                  </p>
+                )
+              ) : event.type === "bars" ? (
+                barVenues && barVenues.length > 0 && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {barVenues.length} {barVenues.length === 1 ? "venue" : "venues"}
                   </p>
                 )
               ) : (
@@ -261,10 +290,12 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle className="font-display text-xl">Delete {event.type === "shopping" ? "Shopping" : "Event"}</DialogTitle>
+                        <DialogTitle className="font-display text-xl">Delete {event.type === "shopping" ? "Shopping" : event.type === "bars" ? "Bars" : "Event"}</DialogTitle>
                         <DialogDescription>
                           {event.type === "shopping" && shoppingStores && shoppingStores.length > 0
                             ? `This will permanently delete "${getShoppingDisplayTitle(event, shoppingStores)}" and all ${shoppingStores.length} ${shoppingStores.length === 1 ? "store" : "stores"} in it. This action cannot be undone.`
+                            : event.type === "bars" && barVenues && barVenues.length > 0
+                            ? `This will permanently delete "${getBarsDisplayTitle(event, barVenues)}" and all ${barVenues.length} ${barVenues.length === 1 ? "venue" : "venues"} in it. This action cannot be undone.`
                             : <>This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.</>
                           }
                         </DialogDescription>
@@ -313,6 +344,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
           )}
           {event.type === "shopping" && (
             <ShoppingDetailCard event={event} stores={shoppingStores ?? []} readOnly={readOnly} />
+          )}
+          {event.type === "bars" && (
+            <BarDetailCard event={event} venues={barVenues ?? []} readOnly={readOnly} />
           )}
         </div>
       )}

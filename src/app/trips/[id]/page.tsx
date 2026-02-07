@@ -13,7 +13,7 @@ import { TodoList } from "@/components/todos/todo-list";
 import { DeleteTripButton } from "@/components/trips/delete-trip-button";
 import { ShareDialog } from "@/components/trips/share-dialog";
 import { MapPin, Calendar, Pencil } from "lucide-react";
-import type { Trip, TripEvent, Todo, EventAttachment, ShoppingStore } from "@/lib/types";
+import type { Trip, TripEvent, Todo, EventAttachment, ShoppingStore, BarVenue } from "@/lib/types";
 
 interface TripDetailPageProps {
   params: Promise<{ id: string }>;
@@ -92,6 +92,25 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
     }
   }
 
+  // Fetch bar venues for bars events
+  const barsEventIds = typedEvents
+    .filter((e) => e.type === "bars")
+    .map((e) => e.id);
+
+  const barVenuesMap: Record<string, BarVenue[]> = {};
+  if (barsEventIds.length > 0) {
+    const { data: allVenues } = await supabase
+      .from("bar_venues")
+      .select("*")
+      .in("event_id", barsEventIds)
+      .order("sort_order", { ascending: true });
+
+    for (const venue of (allVenues as BarVenue[] | null) ?? []) {
+      if (!barVenuesMap[venue.event_id]) barVenuesMap[venue.event_id] = [];
+      barVenuesMap[venue.event_id].push(venue);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -141,7 +160,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
         </div>
 
         <TabsContent value="itinerary" className="mt-6">
-          <EventList events={typedEvents} attachmentsMap={attachmentsMap} shoppingStoresMap={shoppingStoresMap} />
+          <EventList events={typedEvents} attachmentsMap={attachmentsMap} shoppingStoresMap={shoppingStoresMap} barVenuesMap={barVenuesMap} />
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">

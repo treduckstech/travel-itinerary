@@ -89,6 +89,15 @@
 - [x] Shopping events excluded from calendar view (no meaningful dates)
 - [x] Shopping detail card with per-store management (add/remove, categories, map links)
 
+## Completed (Bars Feature)
+- [x] Bars event type with dateless city-based parent cards (same pattern as shopping)
+- [x] `bar_venues` table with RLS policies (migration 012)
+- [x] Bar detail card with venue management (add/remove, notes, map links)
+- [x] Venue creation flow: search bar → auto-detect city → find/create parent → add venue
+- [x] Column 3 layout alongside shopping, matched to hotels by city
+- [x] Bars excluded from calendar view
+- [x] Support in trip page, share page, and admin analytics
+
 ## Phase 3 - Enhancements
 - [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)
 - [x] Drag-and-drop to-do reordering (with @dnd-kit)

@@ -49,7 +49,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [title, setTitle] = useState(event?.title ?? "");
   const [startDatetime, setStartDatetime] = useState(() => {
     if (!event?.start_datetime) return "";
-    if (event.type === "shopping") return ""; // Shopping uses sentinel dates, don't parse
+    if (event.type === "shopping" || event.type === "bars") return ""; // Dateless events use sentinel dates, don't parse
     if (event.timezone) {
       const tz = parseTimezone(event.timezone);
       if (tz.start) {
@@ -62,7 +62,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   });
   const [endDatetime, setEndDatetime] = useState(() => {
     if (!event?.end_datetime) return "";
-    if (event.type === "shopping") return ""; // Shopping uses sentinel dates, don't parse
+    if (event.type === "shopping" || event.type === "bars") return ""; // Dateless events use sentinel dates, don't parse
     if (event.timezone) {
       const tz = parseTimezone(event.timezone);
       if (tz.end) {
@@ -184,6 +184,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const supabase = createClient();
   const [shoppingStore, setShoppingStore] = useState<PlaceResult | null>(null);
   const [shoppingCategory, setShoppingCategory] = useState("");
+  const [barVenue, setBarVenue] = useState<PlaceResult | null>(null);
+  const [barNote, setBarNote] = useState("");
   const isEditing = !!event;
 
   // Load existing attachments when editing an activity event
@@ -301,6 +303,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setPendingFiles([]);
       setShoppingStore(null);
       setShoppingCategory("");
+      setBarVenue(null);
+      setBarNote("");
     }
     setError(null);
   }
@@ -510,11 +514,106 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     router.refresh();
   }
 
+  async function handleBarsCreate() {
+    setLoading(true);
+    setError(null);
+
+    if (!barVenue) {
+      setError("Please search for a venue");
+      setLoading(false);
+      return;
+    }
+
+    // Extract city from venue address
+    const city = barVenue.address
+      ? extractCityFromAddress(barVenue.address)
+      : null;
+    const cityTitle = city || "Bars";
+
+    // Find existing bars event for this city in this trip
+    const { data: existing } = await supabase
+      .from("events")
+      .select("id")
+      .eq("trip_id", tripId)
+      .eq("type", "bars")
+      .ilike("title", cityTitle)
+      .limit(1)
+      .maybeSingle();
+
+    let parentEventId: string;
+
+    if (existing) {
+      parentEventId = existing.id;
+    } else {
+      const { data: inserted, error: insertError } = await supabase
+        .from("events")
+        .insert({
+          trip_id: tripId,
+          type: "bars" as EventType,
+          sub_type: null,
+          title: cityTitle,
+          description: null,
+          start_datetime: new Date().toISOString(),
+          end_datetime: null,
+          location: null,
+          confirmation_number: null,
+          notes: null,
+          timezone: null,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !inserted) {
+        setError(insertError?.message ?? "Failed to create bars event");
+        setLoading(false);
+        return;
+      }
+      parentEventId = inserted.id;
+      logActivity("event_added", { trip_id: tripId, type: "bars", title: cityTitle });
+    }
+
+    // Build Google Maps URL
+    const googleUrl = barVenue.id
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(barVenue.name)}&query_place_id=${barVenue.id}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([barVenue.name, barVenue.address].filter(Boolean).join(", "))}`;
+
+    // Get current venue count for sort_order
+    const { count } = await supabase
+      .from("bar_venues")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", parentEventId);
+
+    const { error: venueError } = await supabase.from("bar_venues").insert({
+      event_id: parentEventId,
+      name: barVenue.name,
+      address: barVenue.address || null,
+      google_maps_url: googleUrl,
+      category: barNote || null,
+      sort_order: count ?? 0,
+    });
+
+    if (venueError) {
+      setError("Failed to add venue");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    setOpen(false);
+    resetForm();
+    toast.success(`${barVenue.name} added${city ? ` to bars in ${city}` : ""}`);
+    router.refresh();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (type === "shopping" && !isEditing) {
       return handleShoppingCreate();
+    }
+
+    if (type === "bars" && !isEditing) {
+      return handleBarsCreate();
     }
 
     setLoading(true);
@@ -525,6 +624,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
         ? `${driveFrom} → ${driveTo}`
         : type === "shopping" && !title.trim()
         ? "Shopping"
+        : type === "bars" && !title.trim()
+        ? "Bars"
         : title;
 
     let finalDescription = description || null;
@@ -539,8 +640,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
 
     const isDualTz = type === "travel";
-    const isShopping = type === "shopping";
-    const tzValue = isShopping
+    const isDateless = type === "shopping" || type === "bars";
+    const tzValue = isDateless
       ? null
       : isDualTz
         ? buildTimezone(startTimezone, endTimezone)
@@ -552,10 +653,10 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       sub_type: type === "travel" ? subType : null,
       title: finalTitle,
       description: finalDescription,
-      start_datetime: isShopping
+      start_datetime: isDateless
         ? new Date().toISOString()
         : naiveToUtc(startDatetime, startTimezone),
-      end_datetime: isShopping
+      end_datetime: isDateless
         ? null
         : endDatetime
           ? naiveToUtc(endDatetime, isDualTz ? endTimezone : startTimezone)
@@ -653,6 +754,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     restaurant: "Restaurant",
     activity: "Activity",
     shopping: "Shopping",
+    bars: "Bars",
   };
 
   const subTypeLabels: Record<TravelSubType, string> = {
@@ -672,6 +774,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     if (type === "hotel") return "Hotel Name";
     if (type === "restaurant") return "Restaurant";
     if (type === "shopping") return isEditing ? "City" : "Store";
+    if (type === "bars") return isEditing ? "City" : "Venue";
     return "Activity";
   }
 
@@ -684,6 +787,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     if (type === "hotel") return "Grand Hotel";
     if (type === "shopping") return "Florence";
+    if (type === "bars") return "London";
     return "City Walking Tour";
   }
 
@@ -710,7 +814,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
-            {isEditing ? "Edit Event" : type === "shopping" ? "Add Store" : "Add Event"}
+            {isEditing ? "Edit Event" : type === "shopping" ? "Add Store" : type === "bars" ? "Add Venue" : "Add Event"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -797,13 +901,21 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     onManualEntry={(name: string) => setShoppingStore({ id: "", name, address: "" })}
                     placeholder="Search for a store..."
                   />
+                ) : type === "bars" && !isEditing ? (
+                  <PlaceSearch
+                    id="event-title"
+                    value={barVenue?.name ?? ""}
+                    onSelect={(place: PlaceResult) => setBarVenue(place)}
+                    onManualEntry={(name: string) => setBarVenue({ id: "", name, address: "" })}
+                    placeholder="Search for a bar..."
+                  />
                 ) : (
                   <Input
                     id="event-title"
                     placeholder={getTitlePlaceholder()}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    required={type !== "shopping"}
+                    required={type !== "shopping" && type !== "bars"}
                     maxLength={100}
                   />
                 )}
@@ -1218,7 +1330,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </p>
                   )}
                 </>
-              ) : type !== "shopping" ? (
+              ) : type !== "shopping" && type !== "bars" ? (
                 <>
                   <div className={type === "restaurant" ? "" : "grid grid-cols-1 sm:grid-cols-2 gap-4"}>
                     <div className="space-y-2">
@@ -1280,6 +1392,26 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                   <DialogFooter>
                     <Button type="submit" disabled={loading || !shoppingStore}>
                       {loading ? "Adding..." : "Add Store"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+
+              {type === "bars" && !isEditing && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="bar-note">Note (optional)</Label>
+                    <Input
+                      id="bar-note"
+                      placeholder="Cocktails, Wine bar, Pub..."
+                      value={barNote}
+                      onChange={(e) => setBarNote(e.target.value)}
+                      maxLength={50}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={loading || !barVenue}>
+                      {loading ? "Adding..." : "Add Venue"}
                     </Button>
                   </DialogFooter>
                 </>
@@ -1363,7 +1495,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
                 </>
-              ) : type !== "travel" && type !== "shopping" ? (
+              ) : type !== "travel" && type !== "shopping" && type !== "bars" ? (
                 <div className="space-y-2">
                   <Label htmlFor="event-location">Location</Label>
                   {type === "activity" ? (
@@ -1408,7 +1540,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               ) : null}
 
-              {type !== "travel" && type !== "shopping" && (
+              {type !== "travel" && type !== "shopping" && type !== "bars" && (
                 <div className="space-y-2">
                   <Label>Timezone</Label>
                   <TimezoneCombobox
@@ -1422,7 +1554,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               )}
 
-              {!(type === "travel" && subType === "train") && !(type === "shopping" && !isEditing) && (
+              {!(type === "travel" && subType === "train") && !(type === "shopping" && !isEditing) && !(type === "bars" && !isEditing) && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="event-notes">Notes</Label>

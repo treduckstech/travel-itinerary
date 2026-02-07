@@ -20,7 +20,7 @@
 - `src/app/friends/` - Friends management page
 - `src/components/` - React components organized by domain (admin, auth, trips, events, calendar, todos, notifications, ui)
 - `src/components/admin/` - Admin components (sidebar, stat cards, pagination, analytics charts, activity log)
-- `src/components/events/` - Event components (event cards, detail cards for drive/train/restaurant/hotel/shopping, form dialog, airport/station comboboxes)
+- `src/components/events/` - Event components (event cards, detail cards for drive/train/restaurant/hotel/shopping/bars, form dialog, airport/station comboboxes)
 - `src/data/` - Static data (airports, stations)
 - `src/lib/` - Shared utilities, types, Supabase clients, admin helpers, rate limiting
 - `supabase/` - Database schema and migrations
@@ -50,6 +50,7 @@ The `description` field uses `|||` as a separator to store structured data witho
 - **Restaurants:** Google Maps URL (when from search)
 - **Hotels:** Google Maps URL (when from search)
 - **Shopping:** Not used (stores tracked in `shopping_stores` table with per-store Google Maps URLs)
+- **Bars:** Not used (venues tracked in `bar_venues` table with per-venue Google Maps URLs)
 
 ### Stations & Airports
 - Airport data in `src/data/airports.ts` — used by `AirportCombobox` for flight forms
@@ -63,6 +64,7 @@ Each travel sub-type has an expandable detail card:
 - `RestaurantDetailCard` — cuisine, price, rating, BenEats link, Google Maps link
 - `HotelDetailCard` — address, Google Maps link
 - `ShoppingDetailCard` — list of stores (with Google Maps links), add/remove stores via PlaceSearch, category tags
+- `BarDetailCard` — list of venues (with Google Maps links), add/remove venues via PlaceSearch, notes
 
 ### Shopping Event Architecture
 Shopping events are **dateless city-based parent cards** (not date-ranged like hotels):
@@ -73,6 +75,15 @@ Shopping events are **dateless city-based parent cards** (not date-ranged like h
 - **Layout**: Three-column grid (`event-list.tsx`): day events | hotels | shopping. Shopping cards matched to hotels by city name.
 - Shopping events are excluded from the calendar view
 - City extraction logic in `src/lib/address.ts` handles US, European, and UK address formats
+
+### Bars Event Architecture
+Bars events follow the identical pattern to shopping events — **dateless city-based parent cards**:
+- `start_datetime` uses a sentinel value, never displayed
+- `title` stores the city name (auto-detected from venue addresses via `extractCityFromAddress`)
+- Venues are managed in the `bar_venues` table with per-venue name, address, Google Maps URL, and category (used as note)
+- **Creation flow**: User searches for a bar → city extracted from address → existing parent found or new one created → venue added as `bar_venues` row
+- **Layout**: Column 3 alongside shopping, matched to hotels by city name
+- Bars events are excluded from the calendar view
 
 ## Security
 - All API proxy routes (flights, places, maps, restaurants) require authentication
