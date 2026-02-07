@@ -24,6 +24,37 @@ function isRightColumnEvent(event: TripEvent): boolean {
   return !isSameDay(parseISO(event.start_datetime), parseISO(event.end_datetime));
 }
 
+// Extract city from Google formatted_address for matching
+function extractCityFromAddress(address: string): string | null {
+  const parts = address.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 3) return null;
+
+  const secondLast = parts[parts.length - 2];
+
+  // US: "NY 10001"
+  if (/^[A-Z]{2}\s+\d{5}/.test(secondLast)) {
+    return parts[parts.length - 3] || null;
+  }
+
+  // European: "50123 Firenze FI" or "75001 Paris"
+  const stripped = secondLast.replace(/^\d{4,6}\s*/, "").replace(/\s+[A-Z]{2}$/, "").trim();
+  if (stripped && stripped !== secondLast) {
+    return stripped;
+  }
+
+  // UK: "London SW1X 7XL"
+  const ukMatch = secondLast.match(/^(.+?)\s+[A-Z]{1,2}\d/);
+  if (ukMatch) {
+    return ukMatch[1].trim();
+  }
+
+  if (!/^\d+$/.test(secondLast)) {
+    return secondLast;
+  }
+
+  return parts[parts.length - 3] || null;
+}
+
 export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap }: EventListProps) {
   if (events.length === 0) {
     return (
@@ -51,15 +82,44 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
   const shoppingEvents = events.filter((e) => e.type === "shopping");
   const dayEvents = events.filter((e) => !isRightColumnEvent(e) && e.type !== "shopping");
 
-  // City matching: map each shopping event to a hotel by matching shopping title against hotel location
+  // City matching: map each shopping event to a hotel
+  // Try: 1) shopping title vs hotel location, 2) city from shopping location, 3) city from store addresses
   const hotelShoppingMap = new Map<string, TripEvent[]>(); // hotelId → shopping events
   const unmatchedShopping: TripEvent[] = [];
 
   for (const shop of shoppingEvents) {
-    const cityName = shop.title.toLowerCase();
-    const matchedHotel = hotelEvents.find(
-      (h) => h.location?.toLowerCase().includes(cityName)
+    // Collect candidate city names to match against hotel locations
+    const candidates: string[] = [];
+
+    // 1) Shopping event title (e.g. "Firenze")
+    if (shop.title && shop.title !== "Shopping") {
+      candidates.push(shop.title.toLowerCase());
+    }
+
+    // 2) City extracted from shopping event's location field
+    if (shop.location) {
+      const city = extractCityFromAddress(shop.location);
+      if (city) candidates.push(city.toLowerCase());
+    }
+
+    // 3) City extracted from store addresses
+    const stores = shoppingStoresMap?.[shop.id];
+    if (stores) {
+      for (const store of stores) {
+        if (store.address) {
+          const city = extractCityFromAddress(store.address);
+          if (city) {
+            candidates.push(city.toLowerCase());
+            break; // first store with a city is enough
+          }
+        }
+      }
+    }
+
+    const matchedHotel = hotelEvents.find((h) =>
+      candidates.some((c) => h.location?.toLowerCase().includes(c))
     );
+
     if (matchedHotel) {
       const existing = hotelShoppingMap.get(matchedHotel.id) ?? [];
       existing.push(shop);
@@ -120,7 +180,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
       <div
         className={`hidden ${hasRightColumn ? "lg:grid" : ""}`}
         style={{
-          gridTemplateColumns: shoppingEvents.length > 0 ? "2fr 2fr 1fr" : "2fr 2fr",
+          gridTemplateColumns: shoppingEvents.length > 0 ? "1fr 2fr 1fr" : "1fr 2fr",
           gridTemplateRows: `repeat(${sortedDates.length + (unmatchedShopping.length > 0 ? 1 : 0)}, auto)`,
           columnGap: "24px",
         }}
@@ -128,19 +188,23 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
         {/* Full-width date header lines (behind everything) */}
         {sortedDates.map((dateKey) => {
           const row = dateToRow.get(dateKey)!;
+          const hasEvents = !!grouped[dateKey]?.length;
           return (
             <div
               key={`header-${dateKey}`}
               style={{ gridColumn: "1 / -1", gridRow: row }}
               className="pointer-events-none relative z-0 flex items-start"
             >
-              <div className="flex w-full items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <h3 className="shrink-0 font-display text-lg text-foreground/70">
-                  {format(parseISO(dateKey), "EEEE, MMMM d")}
-                </h3>
-                <div className="h-px flex-1 bg-border" />
-              </div>
+              {hasEvents ? (
+                <div className="flex w-full items-center gap-3">
+                  <h3 className="shrink-0 font-display text-lg text-foreground/70">
+                    {format(parseISO(dateKey), "EEEE, MMMM d")}
+                  </h3>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+              ) : (
+                <div className="h-px w-full bg-border/50" />
+              )}
             </div>
           );
         })}
@@ -233,7 +297,6 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
         {sortedDates.map((dateKey) => (
           <div key={dateKey}>
             <div className="mb-4 flex items-center gap-3">
-              <div className="h-px flex-1 bg-border" />
               <h3 className="shrink-0 font-display text-lg text-foreground/70">
                 {format(parseISO(dateKey), "EEEE, MMMM d")}
               </h3>
