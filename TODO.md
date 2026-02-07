@@ -41,6 +41,18 @@
 - [x] RLS on activity_logs table (service role only)
 - [x] Share page restricted to safe column selection
 
+## Completed (Security Audit — Feb 2026)
+- [x] HTML injection fix: `escapeHtml()` on all email template interpolations
+- [x] Security headers: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- [x] Removed debug info from flight lookup error responses
+- [x] Wrapped `request.json()` in try-catch across 7 API routes (400 on malformed JSON)
+- [x] Replaced bulk `listUsers()` with targeted `getUserById()` in friends/shares routes
+- [x] Deduplicated admin email list (middleware imports `isAdmin()` from shared module)
+- [x] Sanitized Supabase error messages in all non-admin API responses
+- [x] Added rate limiting to attachment upload endpoint (20 req/min)
+- [x] Guarded cron route against missing `CRON_SECRET` (503 early return)
+- [x] Sanitized uploaded filenames (strip path traversal, unsafe chars, length limit)
+
 ## Completed (Social & Notifications)
 - [x] Hotel search via Google Places (with map detail cards)
 - [x] Friends system (send/accept/decline/remove friend requests)

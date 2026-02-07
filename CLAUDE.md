@@ -76,11 +76,18 @@ Shopping events are **dateless city-based parent cards** (not date-ranged like h
 
 ## Security
 - All API proxy routes (flights, places, maps, restaurants) require authentication
-- Admin routes enforce email allowlist at middleware, layout, and API levels
+- Admin routes enforce email allowlist at middleware, layout, and API levels — middleware imports `isAdmin()` from `src/lib/admin.ts` (single source of truth)
 - Shares endpoints verify trip ownership explicitly (not just RLS)
 - DB trigger prevents shared editors from modifying `user_id` or `share_token`
 - Auth callback validates redirect URLs to prevent open redirects
 - Activity log POST validates action types against an allowlist with size limits
+- Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) configured in `next.config.ts`
+- HTML escaping via `escapeHtml()` from `src/lib/email.ts` on all email template interpolations
+- All `request.json()` calls wrapped in try-catch (returns 400 on malformed JSON)
+- Supabase error messages sanitized in non-admin API responses (no schema/table name leaks)
+- Rate limiting on attachment uploads (20 req/min per user)
+- Uploaded filenames sanitized: path traversal stripped, unsafe chars replaced, length limited
+- Cron route returns 503 if `CRON_SECRET` env var is missing
 
 ## Commands
 - `npm run dev` - Start dev server
