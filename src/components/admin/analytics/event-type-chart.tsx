@@ -25,6 +25,7 @@ const typeLabels: Record<string, string> = {
   hotel: "Hotel",
   restaurant: "Restaurant",
   activity: "Activity",
+  shopping: "Shopping",
 };
 
 export function EventTypeChart({ data, loading }: EventTypeChartProps) {

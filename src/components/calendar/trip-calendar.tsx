@@ -15,6 +15,7 @@ import {
   TrainFront,
   Ship,
   Car,
+  ShoppingBag,
 } from "lucide-react";
 import type { TripEvent, EventType } from "@/lib/types";
 import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
@@ -24,6 +25,7 @@ const typeIcons: Record<EventType, React.ElementType> = {
   hotel: Hotel,
   restaurant: UtensilsCrossed,
   activity: MapPin,
+  shopping: ShoppingBag,
 };
 
 const subTypeIcons: Record<string, React.ElementType> = {
@@ -38,6 +40,7 @@ const typeColors: Record<EventType, string> = {
   hotel: "bg-event-hotel-bg text-event-hotel",
   restaurant: "bg-event-restaurant-bg text-event-restaurant",
   activity: "bg-event-activity-bg text-event-activity",
+  shopping: "bg-event-shopping-bg text-event-shopping",
 };
 
 const DAYS_PER_PAGE = 5;
@@ -168,7 +171,7 @@ export function TripCalendar({
                             <p className="truncate font-medium leading-none">
                               {event.title}
                             </p>
-                            {event.type !== "hotel" && (
+                            {event.type !== "hotel" && event.type !== "shopping" && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Clock className="h-3 w-3 shrink-0" />
                                 {(() => {

@@ -20,7 +20,7 @@
 - `src/app/friends/` - Friends management page
 - `src/components/` - React components organized by domain (admin, auth, trips, events, calendar, todos, notifications, ui)
 - `src/components/admin/` - Admin components (sidebar, stat cards, pagination, analytics charts, activity log)
-- `src/components/events/` - Event components (event cards, detail cards for drive/train/restaurant/hotel, form dialog, airport/station comboboxes)
+- `src/components/events/` - Event components (event cards, detail cards for drive/train/restaurant/hotel/shopping, form dialog, airport/station comboboxes)
 - `src/data/` - Static data (airports, stations)
 - `src/lib/` - Shared utilities, types, Supabase clients, admin helpers, rate limiting
 - `supabase/` - Database schema and migrations
@@ -49,6 +49,7 @@ The `description` field uses `|||` as a separator to store structured data witho
 - **Trains:** `operator|||class|||coach|||seat`
 - **Restaurants:** Google Maps URL (when from search)
 - **Hotels:** Google Maps URL (when from search)
+- **Shopping:** Google Maps URL (when from search)
 
 ### Stations & Airports
 - Airport data in `src/data/airports.ts` — used by `AirportCombobox` for flight forms
@@ -61,6 +62,7 @@ Each travel sub-type has an expandable detail card:
 - `TrainDetailCard` — route visualization with station resolution, operator, class, coach/seat, confirmation number
 - `RestaurantDetailCard` — cuisine, price, rating, BenEats link, Google Maps link
 - `HotelDetailCard` — address, Google Maps link
+- `ShoppingDetailCard` — list of stores (with Google Maps links), add/remove stores via PlaceSearch, category tags
 
 ## Security
 - All API proxy routes (flights, places, maps, restaurants) require authentication

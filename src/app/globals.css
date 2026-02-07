@@ -57,6 +57,8 @@
   --color-event-restaurant-bg: var(--event-restaurant-bg);
   --color-event-activity: var(--event-activity);
   --color-event-activity-bg: var(--event-activity-bg);
+  --color-event-shopping: var(--event-shopping);
+  --color-event-shopping-bg: var(--event-shopping-bg);
 }
 
 :root {
@@ -106,6 +108,8 @@
   --event-restaurant-bg: oklch(0.94 0.05 50);
   --event-activity: oklch(0.48 0.17 160);
   --event-activity-bg: oklch(0.94 0.04 160);
+  --event-shopping: oklch(0.52 0.20 340);
+  --event-shopping-bg: oklch(0.94 0.05 340);
 }
 
 .dark {
@@ -152,6 +156,8 @@
   --event-restaurant-bg: oklch(0.24 0.05 50);
   --event-activity: oklch(0.66 0.14 160);
   --event-activity-bg: oklch(0.24 0.05 160);
+  --event-shopping: oklch(0.70 0.16 340);
+  --event-shopping-bg: oklch(0.24 0.05 340);
 }
 
 @layer base {

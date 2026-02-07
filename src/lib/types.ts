@@ -1,4 +1,4 @@
-export type EventType = "travel" | "hotel" | "restaurant" | "activity";
+export type EventType = "travel" | "hotel" | "restaurant" | "activity" | "shopping";
 
 export type TravelSubType = "flight" | "train" | "ferry" | "drive";
 
@@ -100,6 +100,18 @@ export interface EventAttachment {
   storage_path: string;
   content_type: string;
   file_size: number;
+  created_at: string;
+}
+
+export interface ShoppingStore {
+  id: string;
+  event_id: string;
+  name: string;
+  address: string | null;
+  google_maps_url: string | null;
+  category: string | null;
+  notes: string | null;
+  sort_order: number;
   created_at: string;
 }
 

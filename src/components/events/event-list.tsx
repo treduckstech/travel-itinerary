@@ -1,13 +1,14 @@
 import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { EventCard } from "./event-card";
-import { Route, Hotel, UtensilsCrossed, MapPin } from "lucide-react";
-import type { TripEvent, EventAttachment } from "@/lib/types";
+import { Route, Hotel, UtensilsCrossed, MapPin, ShoppingBag } from "lucide-react";
+import type { TripEvent, EventAttachment, ShoppingStore } from "@/lib/types";
 import { parseTimezone, utcToNaiveDate } from "@/lib/timezone";
 
 interface EventListProps {
   events: TripEvent[];
   readOnly?: boolean;
   attachmentsMap?: Record<string, EventAttachment[]>;
+  shoppingStoresMap?: Record<string, ShoppingStore[]>;
 }
 
 const eventHints = [
@@ -15,14 +16,15 @@ const eventHints = [
   { icon: Hotel, label: "Hotels", color: "bg-event-hotel-bg text-event-hotel" },
   { icon: UtensilsCrossed, label: "Restaurants", color: "bg-event-restaurant-bg text-event-restaurant" },
   { icon: MapPin, label: "Activities", color: "bg-event-activity-bg text-event-activity" },
+  { icon: ShoppingBag, label: "Shopping", color: "bg-event-shopping-bg text-event-shopping" },
 ];
 
-function isMultiDayHotel(event: TripEvent): boolean {
-  if (event.type !== "hotel" || !event.end_datetime) return false;
+function isRightColumnEvent(event: TripEvent): boolean {
+  if ((event.type !== "hotel" && event.type !== "shopping") || !event.end_datetime) return false;
   return !isSameDay(parseISO(event.start_datetime), parseISO(event.end_datetime));
 }
 
-export function EventList({ events, readOnly, attachmentsMap }: EventListProps) {
+export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap }: EventListProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-center">
@@ -45,8 +47,8 @@ export function EventList({ events, readOnly, attachmentsMap }: EventListProps) 
   }
 
   // Separate multi-day hotels from day events
-  const hotelEvents = events.filter(isMultiDayHotel);
-  const dayEvents = events.filter((e) => !isMultiDayHotel(e));
+  const hotelEvents = events.filter(isRightColumnEvent);
+  const dayEvents = events.filter((e) => !isRightColumnEvent(e));
 
   // Collect all dates: from day events + all days covered by hotels
   const dateSet = new Set<string>();
@@ -143,7 +145,7 @@ export function EventList({ events, readOnly, attachmentsMap }: EventListProps) 
                         new Date(b.start_datetime).getTime()
                     )
                     .map((event) => (
-                      <EventCard key={event.id} event={event} readOnly={readOnly} attachments={attachmentsMap?.[event.id]} />
+                      <EventCard key={event.id} event={event} readOnly={readOnly} attachments={attachmentsMap?.[event.id]} shoppingStores={shoppingStoresMap?.[event.id]} />
                     ))}
                 </div>
               )}
@@ -162,7 +164,7 @@ export function EventList({ events, readOnly, attachmentsMap }: EventListProps) 
             className="relative z-10 pb-4 pt-8"
           >
             <div className="h-full">
-              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight attachments={attachmentsMap?.[hotel.id]} />
+              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight attachments={attachmentsMap?.[hotel.id]} shoppingStores={shoppingStoresMap?.[hotel.id]} />
             </div>
           </div>
         ))}
@@ -189,7 +191,7 @@ export function EventList({ events, readOnly, attachmentsMap }: EventListProps) 
                     new Date(b.start_datetime).getTime()
                 )
                 .map((event) => (
-                  <EventCard key={event.id} event={event} readOnly={readOnly} attachments={attachmentsMap?.[event.id]} />
+                  <EventCard key={event.id} event={event} readOnly={readOnly} attachments={attachmentsMap?.[event.id]} shoppingStores={shoppingStoresMap?.[event.id]} />
                 ))}
             </div>
           </div>

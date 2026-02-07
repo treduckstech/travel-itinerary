@@ -21,7 +21,7 @@ create table if not exists trips (
 create table if not exists events (
   id uuid default uuid_generate_v4() primary key,
   trip_id uuid references trips(id) on delete cascade not null,
-  type text not null check (type in ('travel', 'hotel', 'restaurant', 'activity')),
+  type text not null check (type in ('travel', 'hotel', 'restaurant', 'activity', 'shopping')),
   sub_type text,
   title text not null,
   description text,
@@ -58,7 +58,21 @@ create table if not exists event_attachments (
   created_at timestamptz default now() not null
 );
 
+-- Shopping stores table
+create table if not exists shopping_stores (
+  id uuid default uuid_generate_v4() primary key,
+  event_id uuid references events(id) on delete cascade not null,
+  name text not null,
+  address text,
+  google_maps_url text,
+  category text,
+  notes text,
+  sort_order integer default 0 not null,
+  created_at timestamptz default now() not null
+);
+
 -- Indexes for performance
 create index if not exists idx_events_trip_id on events(trip_id);
 create index if not exists idx_todos_trip_id on todos(trip_id);
 create index if not exists idx_event_attachments_event_id on event_attachments(event_id);
+create index if not exists idx_shopping_stores_event_id on shopping_stores(event_id);

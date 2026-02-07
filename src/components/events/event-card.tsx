@@ -21,6 +21,7 @@ import { TrainDetailCard } from "./train-detail-card";
 import { RestaurantDetailCard } from "./restaurant-detail-card";
 import { HotelDetailCard } from "./hotel-detail-card";
 import { ActivityDetailCard } from "./activity-detail-card";
+import { ShoppingDetailCard } from "./shopping-detail-card";
 import { stations } from "@/data/stations";
 import {
   Plane,
@@ -33,8 +34,9 @@ import {
   Ship,
   Car,
   ChevronDown,
+  ShoppingBag,
 } from "lucide-react";
-import type { TripEvent, EventType, EventAttachment } from "@/lib/types";
+import type { TripEvent, EventType, EventAttachment, ShoppingStore } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
 
@@ -46,6 +48,7 @@ const typeConfig: Record<
   hotel: { icon: Hotel, border: "border-l-event-hotel", iconBg: "bg-event-hotel-bg text-event-hotel" },
   restaurant: { icon: UtensilsCrossed, border: "border-l-event-restaurant", iconBg: "bg-event-restaurant-bg text-event-restaurant" },
   activity: { icon: MapPin, border: "border-l-event-activity", iconBg: "bg-event-activity-bg text-event-activity" },
+  shopping: { icon: ShoppingBag, border: "border-l-event-shopping", iconBg: "bg-event-shopping-bg text-event-shopping" },
 };
 
 const subTypeIcons: Record<string, React.ElementType> = {
@@ -70,13 +73,14 @@ function isExpandable(event: TripEvent, attachments?: EventAttachment[]): boolea
   return (
     event.type === "restaurant" ||
     event.type === "hotel" ||
+    event.type === "shopping" ||
     (event.type === "travel" && event.sub_type === "drive") ||
     (event.type === "travel" && event.sub_type === "train") ||
     (event.type === "activity" && !!(event.notes || event.description?.startsWith("https://www.google.com/maps") || (attachments && attachments.length > 0)))
   );
 }
 
-export function EventCard({ event, readOnly, showDateRange, fillHeight, attachments }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean; attachments?: EventAttachment[] }) {
+export function EventCard({ event, readOnly, showDateRange, fillHeight, attachments, shoppingStores }: { event: TripEvent; readOnly?: boolean; showDateRange?: boolean; fillHeight?: boolean; attachments?: EventAttachment[]; shoppingStores?: ShoppingStore[] }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [expanded, setExpanded] = useState(fillHeight && isExpandable(event, attachments));
@@ -155,7 +159,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                 </p>
               )}
               <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-                {event.type !== "hotel" && (
+                {event.type !== "hotel" && event.type !== "shopping" && (
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {(() => {
@@ -179,7 +183,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                   </span>
                 )}
                 {event.location && (
-                  (event.type === "restaurant" || event.type === "hotel" || event.type === "activity") && event.description?.startsWith("https://www.google.com/maps") ? (
+                  (event.type === "restaurant" || event.type === "hotel" || event.type === "activity" || event.type === "shopping") && event.description?.startsWith("https://www.google.com/maps") ? (
                     <a
                       href={event.description}
                       target="_blank"
@@ -270,6 +274,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
           )}
           {event.type === "activity" && (
             <ActivityDetailCard event={event} attachments={attachments} />
+          )}
+          {event.type === "shopping" && (
+            <ShoppingDetailCard event={event} stores={shoppingStores ?? []} readOnly={readOnly} />
           )}
         </div>
       )}
