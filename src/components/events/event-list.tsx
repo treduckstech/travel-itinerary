@@ -171,16 +171,12 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
               style={{ gridColumn: "1 / -1", gridRow: row }}
               className="pointer-events-none relative z-0 flex items-start"
             >
-              {hasEvents ? (
-                <div className="flex w-full items-center gap-3">
-                  <h3 className="shrink-0 font-display text-lg text-foreground/70">
-                    {format(parseISO(dateKey), "EEEE, MMMM d")}
-                  </h3>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-              ) : (
-                <div className="h-px w-full bg-border/50" />
-              )}
+              <div className="flex w-full items-center gap-3">
+                <h3 className={`shrink-0 font-display text-foreground/70 ${hasEvents ? "text-lg" : "text-sm text-muted-foreground"}`}>
+                  {format(parseISO(dateKey), "EEEE, MMMM d")}
+                </h3>
+                <div className={`h-px flex-1 ${hasEvents ? "bg-border" : "bg-border/50"}`} />
+              </div>
             </div>
           );
         })}
