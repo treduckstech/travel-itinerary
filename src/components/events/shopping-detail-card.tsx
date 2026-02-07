@@ -24,8 +24,6 @@ export function ShoppingDetailCard({ event, stores, readOnly }: ShoppingDetailCa
   const router = useRouter();
   const supabase = createClient();
 
-  const googleMapsUrl = event.description?.startsWith("https://www.google.com/maps") ? event.description : null;
-
   async function handleAddStore(place: PlaceResult) {
     const googleUrl = place.id
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`
@@ -92,58 +90,50 @@ export function ShoppingDetailCard({ event, stores, readOnly }: ShoppingDetailCa
     router.refresh();
   }
 
-  const hasContent = stores.length > 0 || event.notes || googleMapsUrl || !readOnly;
-  if (!hasContent) return null;
+  if (!stores.length && !event.notes && readOnly) return null;
 
   return (
     <div className="space-y-3 pt-3 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
       {stores.length > 0 && (
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {stores.map((store) => (
             <div
               key={store.id}
-              className="rounded-md border border-border/50 bg-muted/20 px-3 py-2.5"
+              className="flex items-center gap-2.5 py-1.5 text-sm"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Store className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <p className="font-semibold text-sm leading-tight truncate">{store.name}</p>
-                  </div>
-                  <div className="ml-5.5 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    {store.category && (
-                      <span className="inline-flex items-center gap-1">
-                        <Tag className="h-2.5 w-2.5" />
-                        {store.category}
-                      </span>
-                    )}
-                    {store.address && (
-                      <span className="truncate">{store.address}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1 pt-0.5">
-                  {store.google_maps_url && (
-                    <a
-                      href={store.google_maps_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <MapPin className="h-3.5 w-3.5" />
-                    </a>
-                  )}
-                  {!readOnly && (
-                    <button
-                      onClick={() => handleDeleteStore(store.id)}
-                      disabled={deleting === store.id}
-                      className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
+              <Store className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium leading-tight truncate">{store.name}</p>
+                {store.category && (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Tag className="h-2.5 w-2.5" />
+                    {store.category}
+                  </span>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {store.google_maps_url && (
+                  <a
+                    href={store.google_maps_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <MapPin className="h-3 w-3" />
+                    <span className="hidden sm:inline">Map</span>
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                )}
+                {!readOnly && (
+                  <button
+                    onClick={() => handleDeleteStore(store.id)}
+                    disabled={deleting === store.id}
+                    className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -196,20 +186,6 @@ export function ShoppingDetailCard({ event, stores, readOnly }: ShoppingDetailCa
         <p className="whitespace-pre-line text-sm text-muted-foreground">
           {event.notes}
         </p>
-      )}
-
-      {googleMapsUrl && (
-        <a
-          href={googleMapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
-          <MapPin className="h-3.5 w-3.5" />
-          Google Maps
-          <ExternalLink className="h-3 w-3" />
-        </a>
       )}
     </div>
   );

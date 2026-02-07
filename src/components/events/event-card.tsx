@@ -183,54 +183,62 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                   })()}
                 </p>
               )}
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
-                {event.type !== "hotel" && event.type !== "shopping" && (
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="h-3 w-3" />
-                    {(() => {
-                      const tz = parseTimezone(event.timezone);
-                      if (tz.start) {
-                        const startStr = formatInTimezone(event.start_datetime, tz.start);
-                        if (event.end_datetime) {
-                          const endStr = formatInTimezone(event.end_datetime, tz.end || tz.start);
-                          return `${startStr} – ${endStr}`;
+              {event.type === "shopping" ? (
+                shoppingStores && shoppingStores.length > 0 && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {shoppingStores.length} {shoppingStores.length === 1 ? "store" : "stores"}
+                  </p>
+                )
+              ) : (
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
+                  {event.type !== "hotel" && (
+                    <span className="flex items-center gap-1 shrink-0">
+                      <Clock className="h-3 w-3" />
+                      {(() => {
+                        const tz = parseTimezone(event.timezone);
+                        if (tz.start) {
+                          const startStr = formatInTimezone(event.start_datetime, tz.start);
+                          if (event.end_datetime) {
+                            const endStr = formatInTimezone(event.end_datetime, tz.end || tz.start);
+                            return `${startStr} – ${endStr}`;
+                          }
+                          return startStr;
                         }
-                        return startStr;
-                      }
-                      return (
-                        <>
-                          {format(new Date(event.start_datetime), "h:mm a")}
-                          {event.end_datetime &&
-                            ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
-                        </>
-                      );
-                    })()}
-                  </span>
-                )}
-                {event.location && (
-                  (event.type === "restaurant" || event.type === "hotel" || event.type === "activity" || event.type === "shopping") && event.description?.startsWith("https://www.google.com/maps") ? (
-                    <a
-                      href={event.description}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 min-w-0 hover:text-foreground transition-colors"
-                    >
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{event.location}</span>
-                    </a>
-                  ) : (
-                    <span className="flex items-center gap-1 min-w-0">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">
-                        {event.type === "travel" && event.sub_type === "train"
-                          ? formatTrainLocation(event.location)
-                          : event.location}
-                      </span>
+                        return (
+                          <>
+                            {format(new Date(event.start_datetime), "h:mm a")}
+                            {event.end_datetime &&
+                              ` – ${format(new Date(event.end_datetime), "h:mm a")}`}
+                          </>
+                        );
+                      })()}
                     </span>
-                  )
-                )}
-              </div>
+                  )}
+                  {event.location && (
+                    (event.type === "restaurant" || event.type === "hotel" || event.type === "activity") && event.description?.startsWith("https://www.google.com/maps") ? (
+                      <a
+                        href={event.description}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 min-w-0 hover:text-foreground transition-colors"
+                      >
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{event.location}</span>
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1 min-w-0">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">
+                          {event.type === "travel" && event.sub_type === "train"
+                            ? formatTrainLocation(event.location)
+                            : event.location}
+                        </span>
+                      </span>
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex shrink-0 items-center gap-0.5">
@@ -253,9 +261,12 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle className="font-display text-xl">Delete Event</DialogTitle>
+                        <DialogTitle className="font-display text-xl">Delete {event.type === "shopping" ? "Shopping" : "Event"}</DialogTitle>
                         <DialogDescription>
-                          This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.
+                          {event.type === "shopping" && shoppingStores && shoppingStores.length > 0
+                            ? `This will permanently delete "${getShoppingDisplayTitle(event, shoppingStores)}" and all ${shoppingStores.length} ${shoppingStores.length === 1 ? "store" : "stores"} in it. This action cannot be undone.`
+                            : <>This will permanently delete &ldquo;{event.title}&rdquo;. This action cannot be undone.</>
+                          }
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
