@@ -116,11 +116,11 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
 
   return (
     <>
-      {/* Desktop: two-column grid layout */}
+      {/* Desktop: three-column grid layout (day events | hotels | shopping) */}
       <div
-        className={`hidden ${hasRightColumn ? "md:grid" : ""}`}
+        className={`hidden ${hasRightColumn ? "lg:grid" : ""}`}
         style={{
-          gridTemplateColumns: "3fr 2fr",
+          gridTemplateColumns: shoppingEvents.length > 0 ? "2fr 2fr 1fr" : "2fr 2fr",
           gridTemplateRows: `repeat(${sortedDates.length + (unmatchedShopping.length > 0 ? 1 : 0)}, auto)`,
           columnGap: "24px",
         }}
@@ -145,7 +145,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
           );
         })}
 
-        {/* Left column: day events */}
+        {/* Column 1: day events */}
         {sortedDates.map((dateKey) => {
           const row = dateToRow.get(dateKey)!;
           const dateEvents = grouped[dateKey] ?? [];
@@ -172,23 +172,37 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
           );
         })}
 
-        {/* Right column: spanning hotel cards with matched shopping stacked below */}
+        {/* Column 2: spanning hotel cards */}
+        {hotelPositions.map(({ hotel, startRow, endRow }) => (
+          <div
+            key={hotel.id}
+            style={{
+              gridColumn: 2,
+              gridRow: `${startRow} / ${endRow}`,
+            }}
+            className="relative z-10 pb-4 pt-8"
+          >
+            <div className="h-full">
+              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight attachments={attachmentsMap?.[hotel.id]} shoppingStores={shoppingStoresMap?.[hotel.id]} />
+            </div>
+          </div>
+        ))}
+
+        {/* Column 3: shopping cards matched to hotels */}
         {hotelPositions.map(({ hotel, startRow, endRow }) => {
           const matchedShopping = hotelShoppingMap.get(hotel.id);
+          if (!matchedShopping) return null;
           return (
             <div
-              key={hotel.id}
+              key={`shop-${hotel.id}`}
               style={{
-                gridColumn: 2,
+                gridColumn: 3,
                 gridRow: `${startRow} / ${endRow}`,
               }}
               className="relative z-10 pb-4 pt-8"
             >
-              <div className={`flex flex-col gap-3 ${!matchedShopping ? "h-full" : ""}`}>
-                <div className={!matchedShopping ? "flex-1" : ""}>
-                  <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight={!matchedShopping} attachments={attachmentsMap?.[hotel.id]} shoppingStores={shoppingStoresMap?.[hotel.id]} />
-                </div>
-                {matchedShopping?.map((shop) => (
+              <div className="space-y-3">
+                {matchedShopping.map((shop) => (
                   <EventCard key={shop.id} event={shop} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[shop.id]} />
                 ))}
               </div>
@@ -196,11 +210,11 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
           );
         })}
 
-        {/* Right column: unmatched shopping at the bottom */}
+        {/* Column 3: unmatched shopping at the bottom */}
         {unmatchedShopping.length > 0 && (
           <div
             style={{
-              gridColumn: 2,
+              gridColumn: shoppingEvents.length > 0 ? 3 : 2,
               gridRow: sortedDates.length + 1,
             }}
             className="relative z-10 pb-4 pt-8"
@@ -215,7 +229,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
       </div>
 
       {/* Mobile: single column (original layout), also used when no right column */}
-      <div className={`space-y-10 ${hasRightColumn ? "md:hidden" : ""}`}>
+      <div className={`space-y-10 ${hasRightColumn ? "lg:hidden" : ""}`}>
         {sortedDates.map((dateKey) => (
           <div key={dateKey}>
             <div className="mb-4 flex items-center gap-3">
