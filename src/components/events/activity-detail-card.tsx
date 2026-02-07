@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, ImageIcon, ExternalLink, Loader2, MapPin } from "lucide-react";
+import { FileText, ImageIcon, ExternalLink, Loader2, MapPin, CalendarPlus } from "lucide-react";
+import { buildGoogleCalendarUrl } from "@/lib/calendar";
 import type { TripEvent, EventAttachment } from "@/lib/types";
 
 function formatFileSize(bytes: number): string {
@@ -35,8 +36,6 @@ export function ActivityDetailCard({
   const hasNotes = !!event.notes;
   const hasAttachments = attachments && attachments.length > 0;
 
-  if (!hasNotes && !hasAttachments && !googleMapsUrl) return null;
-
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
       {hasNotes && (
@@ -45,8 +44,8 @@ export function ActivityDetailCard({
         </p>
       )}
 
-      {googleMapsUrl && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {googleMapsUrl && (
           <a
             href={googleMapsUrl}
             target="_blank"
@@ -58,8 +57,20 @@ export function ActivityDetailCard({
             Google Maps
             <ExternalLink className="h-3 w-3" />
           </a>
-        </div>
-      )}
+        )}
+
+        <a
+          href={buildGoogleCalendarUrl(event)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          <CalendarPlus className="h-3.5 w-3.5" />
+          Add to Google Calendar
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
 
       {hasAttachments && (
         <div className="space-y-1.5">

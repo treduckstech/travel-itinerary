@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, MapPin, Star, DollarSign, UtensilsCrossed } from "lucide-react";
+import { ExternalLink, MapPin, Star, DollarSign, UtensilsCrossed, CalendarPlus } from "lucide-react";
+import { buildGoogleCalendarUrl } from "@/lib/calendar";
 import type { TripEvent } from "@/lib/types";
 
 function parseBenEatsId(confirmationNumber: string | null): string | null {
@@ -30,9 +31,6 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
   const mapUrl = event.location
     ? `/api/maps/static?address=${encodeURIComponent(event.location)}&zoom=15`
     : null;
-
-  const hasContent = mapUrl || meta.cuisine || meta.price || meta.rating || benEatsId || googleMapsUrl;
-  if (!hasContent) return null;
 
   return (
     <div className="space-y-3 pt-3 border-t border-border/50">
@@ -99,6 +97,18 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
             <ExternalLink className="h-3 w-3" />
           </a>
         )}
+
+        <a
+          href={buildGoogleCalendarUrl(event)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          <CalendarPlus className="h-3.5 w-3.5" />
+          Add to Google Calendar
+          <ExternalLink className="h-3 w-3" />
+        </a>
       </div>
     </div>
   );
