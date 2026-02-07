@@ -8,42 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExternalLink, MapPin, Plus, Trash2, Tag, Store } from "lucide-react";
 import { PlaceSearch } from "@/components/events/place-search";
+import { extractCityFromAddress } from "@/lib/address";
 import type { TripEvent, ShoppingStore, PlaceResult } from "@/lib/types";
-
-// Extract city from Google formatted_address
-// Examples: "Via Roma, 50123 Firenze FI, Italy" → "Firenze"
-//           "151 W 34th St, New York, NY 10001, USA" → "New York"
-//           "87 Brompton Rd, London SW1X 7XL, United Kingdom" → "London"
-function extractCityFromAddress(address: string): string | null {
-  const parts = address.split(",").map((s) => s.trim()).filter(Boolean);
-  if (parts.length < 3) return null;
-
-  const secondLast = parts[parts.length - 2];
-
-  // US: "NY 10001" or "CA 90210"
-  if (/^[A-Z]{2}\s+\d{5}/.test(secondLast)) {
-    return parts[parts.length - 3] || null;
-  }
-
-  // European: "50123 Firenze FI" or "75001 Paris"
-  const stripped = secondLast.replace(/^\d{4,6}\s*/, "").replace(/\s+[A-Z]{2}$/, "").trim();
-  if (stripped && stripped !== secondLast) {
-    return stripped;
-  }
-
-  // UK: "London SW1X 7XL"
-  const ukMatch = secondLast.match(/^(.+?)\s+[A-Z]{1,2}\d/);
-  if (ukMatch) {
-    return ukMatch[1].trim();
-  }
-
-  // Default: use 2nd-to-last if it doesn't look like a postal code
-  if (!/^\d+$/.test(secondLast)) {
-    return secondLast;
-  }
-
-  return parts[parts.length - 3] || null;
-}
 
 interface ShoppingDetailCardProps {
   event: TripEvent;
@@ -132,46 +98,52 @@ export function ShoppingDetailCard({ event, stores, readOnly }: ShoppingDetailCa
   return (
     <div className="space-y-3 pt-3 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
       {stores.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {stores.map((store) => (
             <div
               key={store.id}
-              className="flex items-center gap-2 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-sm"
+              className="rounded-md border border-border/50 bg-muted/20 px-3 py-2.5"
             >
-              <Store className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <span className="font-medium">{store.name}</span>
-                {store.category && (
-                  <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Tag className="h-2.5 w-2.5" />
-                    {store.category}
-                  </span>
-                )}
-                {store.address && (
-                  <p className="text-xs text-muted-foreground truncate">{store.address}</p>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                {store.google_maps_url && (
-                  <a
-                    href={store.google_maps_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-primary hover:text-primary/80 transition-colors"
-                  >
-                    <MapPin className="h-3.5 w-3.5" />
-                  </a>
-                )}
-                {!readOnly && (
-                  <button
-                    onClick={() => handleDeleteStore(store.id)}
-                    disabled={deleting === store.id}
-                    className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Store className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <p className="font-semibold text-sm leading-tight truncate">{store.name}</p>
+                  </div>
+                  <div className="ml-5.5 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                    {store.category && (
+                      <span className="inline-flex items-center gap-1">
+                        <Tag className="h-2.5 w-2.5" />
+                        {store.category}
+                      </span>
+                    )}
+                    {store.address && (
+                      <span className="truncate">{store.address}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                  {store.google_maps_url && (
+                    <a
+                      href={store.google_maps_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                  {!readOnly && (
+                    <button
+                      onClick={() => handleDeleteStore(store.id)}
+                      disabled={deleting === store.id}
+                      className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -39,6 +39,7 @@ import {
 import type { TripEvent, EventType, EventAttachment, ShoppingStore } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 import { parseTimezone, formatInTimezone, utcToNaiveDate } from "@/lib/timezone";
+import { extractCityFromAddress } from "@/lib/address";
 
 const typeConfig: Record<
   EventType,
@@ -67,6 +68,28 @@ function formatTrainLocation(location: string): string {
   if (!location.includes("→")) return location;
   const [dep, arr] = location.split("→").map((s) => s.trim());
   return `${resolveStationCity(dep)} → ${resolveStationCity(arr)}`;
+}
+
+function getShoppingDisplayTitle(event: TripEvent, stores?: ShoppingStore[]): string {
+  // If title is already a city name, use it
+  if (event.title && event.title !== "Shopping") {
+    return `Shopping in ${event.title}`;
+  }
+  // Try extracting city from store addresses
+  if (stores?.length) {
+    for (const store of stores) {
+      if (store.address) {
+        const city = extractCityFromAddress(store.address);
+        if (city) return `Shopping in ${city}`;
+      }
+    }
+  }
+  // Try extracting city from event location
+  if (event.location) {
+    const city = extractCityFromAddress(event.location);
+    if (city) return `Shopping in ${city}`;
+  }
+  return "Shopping";
 }
 
 function isExpandable(event: TripEvent, attachments?: EventAttachment[]): boolean {
@@ -144,7 +167,9 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate font-semibold leading-tight">{event.title}</p>
+              <p className="truncate font-semibold leading-tight">
+                {event.type === "shopping" ? getShoppingDisplayTitle(event, shoppingStores) : event.title}
+              </p>
               {showDateRange && event.type !== "shopping" && event.end_datetime && (
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {(() => {
