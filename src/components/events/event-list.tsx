@@ -117,9 +117,17 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
   });
 
   hotelEvents.forEach((hotel) => {
-    const start = parseISO(hotel.start_datetime);
-    const end = parseISO(hotel.end_datetime!);
-    eachDayOfInterval({ start, end }).forEach((day) => {
+    const tz = parseTimezone(hotel.timezone);
+    const startDate = tz.start
+      ? utcToNaiveDate(hotel.start_datetime, tz.start)
+      : format(parseISO(hotel.start_datetime), "yyyy-MM-dd");
+    const endDate = tz.start
+      ? utcToNaiveDate(hotel.end_datetime!, tz.start)
+      : format(parseISO(hotel.end_datetime!), "yyyy-MM-dd");
+    eachDayOfInterval({
+      start: parseISO(startDate),
+      end: parseISO(endDate),
+    }).forEach((day) => {
       dateSet.add(format(day, "yyyy-MM-dd"));
     });
   });
@@ -140,8 +148,13 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
 
   // Compute hotel grid positions
   const hotelPositions = hotelEvents.map((hotel) => {
-    const startKey = format(parseISO(hotel.start_datetime), "yyyy-MM-dd");
-    const endKey = format(parseISO(hotel.end_datetime!), "yyyy-MM-dd");
+    const tz = parseTimezone(hotel.timezone);
+    const startKey = tz.start
+      ? utcToNaiveDate(hotel.start_datetime, tz.start)
+      : format(parseISO(hotel.start_datetime), "yyyy-MM-dd");
+    const endKey = tz.start
+      ? utcToNaiveDate(hotel.end_datetime!, tz.start)
+      : format(parseISO(hotel.end_datetime!), "yyyy-MM-dd");
     const startRow = dateToRow.get(startKey) ?? 1;
     // End row is exclusive in CSS grid, so we add 1 to include the checkout day row
     const endRow = (dateToRow.get(endKey) ?? startRow) + 1;
