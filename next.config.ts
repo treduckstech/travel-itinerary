@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
               `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} https://maps.googleapis.com https://*.google.com https://*.googleapis.com`,
               "frame-src 'self'",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://accounts.google.com",
             ].join("; "),
           },
         ],
