@@ -422,6 +422,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     const finalTitle =
       type === "travel" && subType === "drive" && driveFrom && driveTo
         ? `${driveFrom} → ${driveTo}`
+        : type === "shopping" && !title.trim()
+        ? "Shopping"
         : title;
 
     let finalDescription = description || null;
@@ -568,7 +570,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     if (type === "hotel") return "Hotel Name";
     if (type === "restaurant") return "Restaurant";
-    if (type === "shopping") return "City Name";
+    if (type === "shopping") return "City (optional)";
     return "Activity";
   }
 
@@ -580,7 +582,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       if (subType === "drive") return "Drive to coast";
     }
     if (type === "hotel") return "Grand Hotel";
-    if (type === "shopping") return "Florence";
+    if (type === "shopping") return "Auto-detected from stores";
     return "City Walking Tour";
   }
 
@@ -692,7 +694,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     placeholder={getTitlePlaceholder()}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    required
+                    required={type !== "shopping"}
                     maxLength={100}
                   />
                 )}
