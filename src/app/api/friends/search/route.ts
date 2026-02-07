@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
 
   const serviceClient = createServiceClient();
 
-  // Get all users
-  const { data: userData } = await serviceClient.auth.admin.listUsers();
+  // Get users (with pagination upper bound)
+  const { data: userData } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
   if (!userData?.users) {
     return NextResponse.json([]);
   }

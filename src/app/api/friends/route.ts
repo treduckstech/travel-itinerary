@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { escapeHtml } from "@/lib/email";
 
 function obscureEmail(email: string): string {
   const [local, domain] = email.split("@");
@@ -37,18 +38,28 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load friendships" }, { status: 500 });
   }
 
-  // Resolve names and emails for friend IDs
-  const { data: userData } = await serviceClient.auth.admin.listUsers();
-  const userMap = new Map<string, { email: string; name: string }>();
-  userData?.users?.forEach((u) => {
-    userMap.set(u.id, {
-      email: u.email ? obscureEmail(u.email) : "Unknown",
-      name: getUserName(u),
-    });
+  // Resolve names and emails for specific friend IDs
+  const friendIds = new Set<string>();
+  (friendships ?? []).forEach((f) => {
+    const friendId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
+    friendIds.add(friendId);
   });
+
+  const userMap = new Map<string, { email: string; name: string }>();
+  await Promise.all(
+    [...friendIds].map(async (id) => {
+      const { data } = await serviceClient.auth.admin.getUserById(id);
+      if (data?.user) {
+        userMap.set(id, {
+          email: data.user.email ? obscureEmail(data.user.email) : "Unknown",
+          name: getUserName(data.user),
+        });
+      }
+    })
+  );
 
   const enriched = (friendships ?? []).map((f) => {
     const friendId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
@@ -79,7 +90,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const { user_id } = await request.json();
+  let user_id: string | undefined;
+  try {
+    const body = await request.json();
+    user_id = body.user_id;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   if (!user_id || typeof user_id !== "string") {
     return NextResponse.json({ error: "user_id is required" }, { status: 400 });
   }
@@ -91,8 +108,8 @@ export async function POST(request: NextRequest) {
   const serviceClient = createServiceClient();
 
   // Look up user by ID to verify they exist
-  const { data: userData } = await serviceClient.auth.admin.listUsers();
-  const matchedUser = userData?.users?.find((u) => u.id === user_id);
+  const { data: userData } = await serviceClient.auth.admin.getUserById(user_id);
+  const matchedUser = userData?.user;
 
   if (!matchedUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -124,7 +141,7 @@ export async function POST(request: NextRequest) {
         .eq("id", friendship.id);
 
       if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to update friendship" }, { status: 500 });
       }
 
       // Notify the original requester that their request was accepted
@@ -154,7 +171,7 @@ export async function POST(request: NextRequest) {
         .eq("id", friendship.id);
 
       if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to update friendship" }, { status: 500 });
       }
 
       return NextResponse.json({ ...friendship, status: "pending" }, { status: 200 });
@@ -176,7 +193,7 @@ export async function POST(request: NextRequest) {
     if (insertError.code === "23505") {
       return NextResponse.json({ error: "Friend request already sent" }, { status: 409 });
     }
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create friend request" }, { status: 500 });
   }
 
   // Create notification for the addressee
@@ -196,7 +213,7 @@ export async function POST(request: NextRequest) {
       await sendEmail({
         to: matchedEmail,
         subject: "New friend request on Travel Itinerary",
-        html: `<p><strong>${senderName}</strong> sent you a friend request on Travel Itinerary.</p><p>Log in to accept or decline.</p>`,
+        html: `<p><strong>${escapeHtml(senderName)}</strong> sent you a friend request on Travel Itinerary.</p><p>Log in to accept or decline.</p>`,
       });
     } catch (err) {
       console.error("Failed to send friend request email:", err);

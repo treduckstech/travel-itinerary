@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, escapeHtml } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Cron not configured" }, { status: 503 });
+  }
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -74,7 +77,7 @@ export async function GET(request: NextRequest) {
       await sendEmail({
         to: email,
         subject: `To-do due today: ${todo.title}`,
-        html: `<p>Your to-do item <strong>"${todo.title}"</strong> is due today for your trip <strong>${trip.name}</strong>.</p><p><a href="https://travel.treducks.io/trips/${todo.trip_id}">View trip</a></p>`,
+        html: `<p>Your to-do item <strong>&ldquo;${escapeHtml(todo.title)}&rdquo;</strong> is due today for your trip <strong>${escapeHtml(trip.name)}</strong>.</p><p><a href="https://travel.treducks.io/trips/${todo.trip_id}">View trip</a></p>`,
       });
     } catch (e) {
       console.error("Failed to send reminder email:", e);

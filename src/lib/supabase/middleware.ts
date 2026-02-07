@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-const ADMIN_EMAILS = ["ben@treducks.tech"];
+import { isAdmin } from "@/lib/admin";
 
 export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute =
     request.nextUrl.pathname.startsWith("/admin") ||
     request.nextUrl.pathname.startsWith("/api/admin");
-  if (isAdminRoute && (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? ""))) {
+  if (isAdminRoute && (!user || !isAdmin(user.email))) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

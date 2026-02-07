@@ -67,6 +67,16 @@
 ## Bugs
 - [x] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)
 
+## Completed (Shopping Redesign)
+- [x] Shopping events redesigned as dateless, city-based parent cards
+- [x] Three-column itinerary layout: day events | hotels | shopping (3fr 4fr 3fr)
+- [x] Shopping cards matched to hotels by city (multi-signal: title, location, store addresses)
+- [x] Auto-detect city from Google Places address (`src/lib/address.ts`)
+- [x] Shopping card shows "Shopping in <city>" with store count
+- [x] Store creation flow: search store first, auto find/create parent city card
+- [x] Shopping events excluded from calendar view (no meaningful dates)
+- [x] Shopping detail card with per-store management (add/remove, categories, map links)
+
 ## Phase 3 - Enhancements
 - [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)
 - [x] Drag-and-drop to-do reordering (with @dnd-kit)
@@ -87,3 +97,4 @@
 - [ ] Offline support
 - [ ] Multi-language support
 - [ ] Upgrade rate limiting to Upstash Redis for cross-instance enforcement
+- [ ] Add Cloudflare Turnstile bot protection

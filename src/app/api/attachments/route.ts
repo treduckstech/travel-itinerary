@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -11,6 +12,25 @@ const ALLOWED_TYPES = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_ATTACHMENTS = 5;
 
+function sanitizeFilename(name: string): string {
+  // Strip path separators and null bytes
+  let safe = name.replace(/[/\\:\0]/g, "");
+  // Remove leading dots (hidden files)
+  safe = safe.replace(/^\.+/, "");
+  // Replace remaining unsafe characters
+  safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
+  // Limit length (preserve extension)
+  if (safe.length > 100) {
+    const ext = safe.lastIndexOf(".");
+    if (ext > 0) {
+      safe = safe.slice(0, 96 - safe.length + ext) + safe.slice(ext);
+    } else {
+      safe = safe.slice(0, 100);
+    }
+  }
+  return safe || "upload";
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
 
@@ -19,6 +39,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = rateLimit(`attachments:${user.id}`, { limit: 20, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const formData = await request.formData();
@@ -85,7 +110,8 @@ export async function POST(request: Request) {
 
   // Upload to Supabase Storage
   const fileId = crypto.randomUUID();
-  const storagePath = `${tripId}/${eventId}/${fileId}-${file.name}`;
+  const safeName = sanitizeFilename(file.name);
+  const storagePath = `${tripId}/${eventId}/${fileId}-${safeName}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
@@ -107,7 +133,7 @@ export async function POST(request: Request) {
     .from("event_attachments")
     .insert({
       event_id: eventId,
-      file_name: file.name,
+      file_name: safeName,
       storage_path: storagePath,
       content_type: file.type,
       file_size: file.size,
@@ -118,7 +144,7 @@ export async function POST(request: Request) {
   if (dbError) {
     // Clean up uploaded file
     await supabase.storage.from("event-attachments").remove([storagePath]);
-    return NextResponse.json({ error: dbError.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save attachment" }, { status: 500 });
   }
 
   return NextResponse.json(attachment, { status: 201 });
@@ -164,7 +190,7 @@ export async function DELETE(request: Request) {
     .eq("id", attachmentId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete attachment" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

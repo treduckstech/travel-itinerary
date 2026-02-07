@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -16,7 +17,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const { email } = await request.json();
+  let email: string | undefined;
+  try {
+    const body = await request.json();
+    email = body.email;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   if (!email || typeof email !== "string") {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
@@ -40,7 +47,7 @@ export async function POST(request: NextRequest) {
     await sendEmail({
       to: normalizedEmail,
       subject: `${senderName} invited you to join Travel Itinerary`,
-      html: `<p><strong>${senderName}</strong> invited you to join Travel Itinerary.</p><p>Sign up at <a href="${origin}">${origin}</a> to start planning trips together.</p>`,
+      html: `<p><strong>${escapeHtml(senderName)}</strong> invited you to join Travel Itinerary.</p><p>Sign up at <a href="${escapeHtml(origin)}">${escapeHtml(origin)}</a> to start planning trips together.</p>`,
     });
   } catch {
     return NextResponse.json({ error: "Failed to send invite" }, { status: 500 });

@@ -132,7 +132,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   const serviceClient = createServiceClient();
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (body.action === "delete_trip" && body.trip_id) {
     const { error } = await serviceClient

@@ -49,7 +49,7 @@ The `description` field uses `|||` as a separator to store structured data witho
 - **Trains:** `operator|||class|||coach|||seat`
 - **Restaurants:** Google Maps URL (when from search)
 - **Hotels:** Google Maps URL (when from search)
-- **Shopping:** Google Maps URL (when from search)
+- **Shopping:** Not used (stores tracked in `shopping_stores` table with per-store Google Maps URLs)
 
 ### Stations & Airports
 - Airport data in `src/data/airports.ts` — used by `AirportCombobox` for flight forms
@@ -63,6 +63,16 @@ Each travel sub-type has an expandable detail card:
 - `RestaurantDetailCard` — cuisine, price, rating, BenEats link, Google Maps link
 - `HotelDetailCard` — address, Google Maps link
 - `ShoppingDetailCard` — list of stores (with Google Maps links), add/remove stores via PlaceSearch, category tags
+
+### Shopping Event Architecture
+Shopping events are **dateless city-based parent cards** (not date-ranged like hotels):
+- `start_datetime` uses a sentinel value (`new Date().toISOString()`), never displayed
+- `title` stores the city name (auto-detected from store addresses via `extractCityFromAddress`)
+- Stores are managed in the `shopping_stores` table with per-store name, address, Google Maps URL, and category
+- **Creation flow**: User searches for a store → city extracted from address → existing parent found or new one created → store added as `shopping_stores` row
+- **Layout**: Three-column grid (`event-list.tsx`): day events | hotels | shopping. Shopping cards matched to hotels by city name.
+- Shopping events are excluded from the calendar view
+- City extraction logic in `src/lib/address.ts` handles US, European, and UK address formats
 
 ## Security
 - All API proxy routes (flights, places, maps, restaurants) require authentication

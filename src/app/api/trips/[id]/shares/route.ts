@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { escapeHtml } from "@/lib/email";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -35,7 +36,7 @@ export async function GET(_request: Request, context: RouteContext) {
     .order("created_at", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 
   return NextResponse.json(shares);
@@ -64,7 +65,12 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { email, user_id } = body;
 
   if ((!email || typeof email !== "string") && (!user_id || typeof user_id !== "string")) {
@@ -72,18 +78,20 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   // Look up user using service client (bypasses RLS on auth.users)
-  const { data: userData } = await serviceClient.auth.admin.listUsers();
-  let matchedUser;
+  let matchedUser: { id: string; email?: string } | undefined;
   let normalizedEmail: string;
 
   if (user_id) {
-    matchedUser = userData?.users?.find((u) => u.id === user_id);
-    if (!matchedUser?.email) {
+    const { data } = await serviceClient.auth.admin.getUserById(user_id);
+    if (!data?.user?.email) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    normalizedEmail = matchedUser.email.toLowerCase();
+    matchedUser = data.user;
+    normalizedEmail = data.user.email.toLowerCase();
   } else {
     normalizedEmail = email.toLowerCase().trim();
+    // listUsers with perPage to search for the specific email
+    const { data: userData } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
     matchedUser = userData?.users?.find(
       (u) => u.email?.toLowerCase() === normalizedEmail
     );
@@ -103,7 +111,7 @@ export async function POST(request: Request, context: RouteContext) {
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 
   // Notify the shared user
@@ -124,7 +132,7 @@ export async function POST(request: Request, context: RouteContext) {
     await sendEmail({
       to: normalizedEmail,
       subject: "A trip was shared with you on Travel Itinerary",
-      html: `<p><strong>${user.email}</strong> shared a trip with you on Travel Itinerary.</p><p>Log in to view and edit the trip.</p>`,
+      html: `<p><strong>${escapeHtml(user.email ?? "")}</strong> shared a trip with you on Travel Itinerary.</p><p>Log in to view and edit the trip.</p>`,
     });
   } catch {
     // Fire-and-forget
@@ -169,7 +177,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     .eq("trip_id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -20,7 +20,7 @@ export async function GET() {
     .limit(20);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
 
   return NextResponse.json(notifications);
@@ -35,7 +35,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const serviceClient = createServiceClient();
 
   if (body.all === true) {
@@ -46,7 +51,7 @@ export async function PATCH(request: NextRequest) {
       .eq("read", false);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
   } else if (Array.isArray(body.ids) && body.ids.length > 0) {
     const { error } = await serviceClient
@@ -56,7 +61,7 @@ export async function PATCH(request: NextRequest) {
       .in("id", body.ids);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
   } else {
     return NextResponse.json({ error: "Provide { all: true } or { ids: [...] }" }, { status: 400 });

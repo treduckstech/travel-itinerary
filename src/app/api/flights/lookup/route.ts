@@ -257,35 +257,21 @@ export async function GET(request: NextRequest) {
   const flightDate = request.nextUrl.searchParams.get("flight_date"); // optional YYYY-MM-DD
   const depAirport = request.nextUrl.searchParams.get("dep_iata")?.toUpperCase() || null; // optional, e.g. "ATL"
 
-  const debug: Record<string, unknown> = { normalized, flightDate, depAirport, providers: [] as string[] };
-
   try {
     // Try FlightAware first (better data), fall back to AirLabs (better codeshare support)
     let result: LookupResult | null = null;
 
     if (flightAwareKey) {
-      (debug.providers as string[]).push("flightaware");
       result = await lookupViaFlightAware(flightAwareKey, normalized);
-      debug.flightaware = result ? "found" : "not_found";
     }
 
     if (!result && airLabsKey) {
-      (debug.providers as string[]).push("airlabs");
       result = await lookupViaAirLabs(airLabsKey, normalized, flightDate, depAirport);
-      debug.airlabs = result ? "found" : "not_found";
-
-      // Include available routes in debug for troubleshooting
-      if (!result) {
-        const allRoutes = await fetchAirLabsRoutes(airLabsKey, normalized, null);
-        debug.airlabs_available_routes = allRoutes.map((r) => ({
-          dep: r.dep_iata, arr: r.arr_iata, days: r.days, duration: r.duration,
-        }));
-      }
     }
 
     if (!result) {
       return NextResponse.json(
-        { error: "Flight not found", debug },
+        { error: "Flight not found" },
         { status: 404 }
       );
     }
@@ -293,7 +279,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(
-      { error: "Failed to connect to flight data service", debug },
+      { error: "Failed to connect to flight data service" },
       { status: 502 }
     );
   }

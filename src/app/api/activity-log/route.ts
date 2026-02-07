@@ -26,7 +26,15 @@ export async function POST(request: NextRequest) {
     "friend_request_sent", "friend_request_accepted", "friend_removed",
   ];
 
-  const { action_type, action_details } = await request.json();
+  let action_type: string | undefined;
+  let action_details: unknown;
+  try {
+    const body = await request.json();
+    action_type = body.action_type;
+    action_details = body.action_details;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (!action_type || !ALLOWED_ACTIONS.includes(action_type)) {
     return NextResponse.json({ error: "Invalid action_type" }, { status: 400 });
@@ -55,7 +63,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to log activity" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

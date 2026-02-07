@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { escapeHtml } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
           await sendEmail({
             to: "ben@treducks.tech",
             subject: `New signup: ${data.user.email}`,
-            html: `<p>A new user signed up for Travel Itinerary:</p><p><strong>${data.user.email}</strong></p><p>Provider: ${data.user.app_metadata?.provider ?? "unknown"}</p>`,
+            html: `<p>A new user signed up for Travel Itinerary:</p><p><strong>${escapeHtml(data.user.email ?? "")}</strong></p><p>Provider: ${escapeHtml(String(data.user.app_metadata?.provider ?? "unknown"))}</p>`,
           });
         } catch {
           // Fire-and-forget
