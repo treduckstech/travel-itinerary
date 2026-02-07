@@ -48,27 +48,29 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [title, setTitle] = useState(event?.title ?? "");
   const [startDatetime, setStartDatetime] = useState(() => {
     if (!event?.start_datetime) return "";
+    if (event.type === "shopping") return ""; // Shopping uses sentinel dates, don't parse
     if (event.timezone) {
       const tz = parseTimezone(event.timezone);
       if (tz.start) {
         const naive = utcToNaive(event.start_datetime, tz.start);
-        return (event.type === "hotel" || event.type === "shopping") ? naive.slice(0, 10) : naive;
+        return event.type === "hotel" ? naive.slice(0, 10) : naive;
       }
     }
     const iso = new Date(event.start_datetime).toISOString();
-    return (event.type === "hotel" || event.type === "shopping") ? iso.slice(0, 10) : iso.slice(0, 16);
+    return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
   });
   const [endDatetime, setEndDatetime] = useState(() => {
     if (!event?.end_datetime) return "";
+    if (event.type === "shopping") return ""; // Shopping uses sentinel dates, don't parse
     if (event.timezone) {
       const tz = parseTimezone(event.timezone);
       if (tz.end) {
         const naive = utcToNaive(event.end_datetime, tz.end);
-        return (event.type === "hotel" || event.type === "shopping") ? naive.slice(0, 10) : naive;
+        return event.type === "hotel" ? naive.slice(0, 10) : naive;
       }
     }
     const iso = new Date(event.end_datetime).toISOString();
-    return (event.type === "hotel" || event.type === "shopping") ? iso.slice(0, 10) : iso.slice(0, 16);
+    return event.type === "hotel" ? iso.slice(0, 10) : iso.slice(0, 16);
   });
   const [location, setLocation] = useState(event?.location ?? "");
   const [notes, setNotes] = useState(() => {
@@ -434,9 +436,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
 
     const isDualTz = type === "travel";
-    const tzValue = isDualTz
-      ? buildTimezone(startTimezone, endTimezone)
-      : buildTimezone(startTimezone);
+    const isShopping = type === "shopping";
+    const tzValue = isShopping
+      ? null
+      : isDualTz
+        ? buildTimezone(startTimezone, endTimezone)
+        : buildTimezone(startTimezone);
 
     const eventData = {
       trip_id: tripId,
@@ -444,10 +449,14 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       sub_type: type === "travel" ? subType : null,
       title: finalTitle,
       description: finalDescription,
-      start_datetime: naiveToUtc(startDatetime, startTimezone),
-      end_datetime: endDatetime
-        ? naiveToUtc(endDatetime, isDualTz ? endTimezone : startTimezone)
-        : null,
+      start_datetime: isShopping
+        ? new Date().toISOString()
+        : naiveToUtc(startDatetime, startTimezone),
+      end_datetime: isShopping
+        ? null
+        : endDatetime
+          ? naiveToUtc(endDatetime, isDualTz ? endTimezone : startTimezone)
+          : null,
       location: type === "travel" ? getTravelLocation() : (location || null),
       confirmation_number: confirmationNumber || null,
       notes: notes || null,
@@ -559,7 +568,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     if (type === "hotel") return "Hotel Name";
     if (type === "restaurant") return "Restaurant";
-    if (type === "shopping") return "Shopping Area";
+    if (type === "shopping") return "City Name";
     return "Activity";
   }
 
@@ -571,7 +580,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       if (subType === "drive") return "Drive to coast";
     }
     if (type === "hotel") return "Grand Hotel";
-    if (type === "shopping") return "Shopping in Paris";
+    if (type === "shopping") return "Florence";
     return "City Walking Tour";
   }
 
@@ -1098,7 +1107,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </p>
                   )}
                 </>
-              ) : (
+              ) : type !== "shopping" ? (
                 <>
                   <div className={type === "restaurant" ? "" : "grid grid-cols-1 sm:grid-cols-2 gap-4"}>
                     <div className="space-y-2">
@@ -1109,14 +1118,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                           ? "Check-in"
                           : type === "restaurant"
                           ? "Reservation Time"
-                          : type === "shopping"
-                          ? "From"
                           : "Start"}
                       </Label>
                       <Input
                         id="event-start"
-                        type={type === "hotel" || type === "shopping" ? "date" : "datetime-local"}
-                        value={type === "hotel" || type === "shopping" ? startDatetime.slice(0, 10) : startDatetime}
+                        type={type === "hotel" ? "date" : "datetime-local"}
+                        value={type === "hotel" ? startDatetime.slice(0, 10) : startDatetime}
                         onChange={(e) => handleDepartureChange(e.target.value)}
                         required
                       />
@@ -1128,14 +1135,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                             ? "Arrival"
                             : type === "hotel"
                             ? "Check-out"
-                            : type === "shopping"
-                            ? "To"
                             : "End"}
                         </Label>
                         <Input
                           id="event-end"
-                          type={type === "hotel" || type === "shopping" ? "date" : "datetime-local"}
-                          value={type === "hotel" || type === "shopping" ? endDatetime.slice(0, 10) : endDatetime}
+                          type={type === "hotel" ? "date" : "datetime-local"}
+                          value={type === "hotel" ? endDatetime.slice(0, 10) : endDatetime}
                           onChange={(e) => setEndDatetime(e.target.value)}
                         />
                         {type === "travel" && subType === "flight" && flightDuration && (
@@ -1147,7 +1152,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     )}
                   </div>
                 </>
-              )}
+              ) : null}
 
               {type === "travel" && subType === "flight" ? (
                 <>
@@ -1272,7 +1277,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               ) : null}
 
-              {type !== "travel" && (
+              {type !== "travel" && type !== "shopping" && (
                 <div className="space-y-2">
                   <Label>Timezone</Label>
                   <TimezoneCombobox

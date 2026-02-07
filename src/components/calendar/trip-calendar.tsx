@@ -67,11 +67,14 @@ export function TripCalendar({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(startDate);
   const [page, setPage] = useState(0);
 
-  const eventDates = events.map((e) => parseISO(e.start_datetime));
+  // Exclude shopping events (they have no meaningful dates)
+  const calendarEvents = events.filter((e) => e.type !== "shopping");
+
+  const eventDates = calendarEvents.map((e) => parseISO(e.start_datetime));
 
   const dayGroups = useMemo<DayGroup[]>(() => {
     const grouped = new Map<string, TripEvent[]>();
-    for (const event of events) {
+    for (const event of calendarEvents) {
       const tz = parseTimezone(event.timezone);
       const key = tz.start
         ? utcToNaiveDate(event.start_datetime, tz.start)
@@ -95,7 +98,7 @@ export function TripCalendar({
             new Date(b.start_datetime).getTime()
         ),
       }));
-  }, [events]);
+  }, [calendarEvents]);
 
   const totalPages = Math.max(1, Math.ceil(dayGroups.length / DAYS_PER_PAGE));
   const currentGroups = dayGroups.slice(

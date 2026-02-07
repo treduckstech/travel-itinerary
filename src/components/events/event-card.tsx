@@ -145,7 +145,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate font-semibold leading-tight">{event.title}</p>
-              {showDateRange && event.end_datetime && (
+              {showDateRange && event.type !== "shopping" && event.end_datetime && (
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {(() => {
                     const tz = parseTimezone(event.timezone);

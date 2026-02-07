@@ -20,7 +20,7 @@ const eventHints = [
 ];
 
 function isRightColumnEvent(event: TripEvent): boolean {
-  if ((event.type !== "hotel" && event.type !== "shopping") || !event.end_datetime) return false;
+  if (event.type !== "hotel" || !event.end_datetime) return false;
   return !isSameDay(parseISO(event.start_datetime), parseISO(event.end_datetime));
 }
 
@@ -46,9 +46,28 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
     );
   }
 
-  // Separate multi-day hotels from day events
+  // Separate hotels, shopping, and day events
   const hotelEvents = events.filter(isRightColumnEvent);
-  const dayEvents = events.filter((e) => !isRightColumnEvent(e));
+  const shoppingEvents = events.filter((e) => e.type === "shopping");
+  const dayEvents = events.filter((e) => !isRightColumnEvent(e) && e.type !== "shopping");
+
+  // City matching: map each shopping event to a hotel by matching shopping title against hotel location
+  const hotelShoppingMap = new Map<string, TripEvent[]>(); // hotelId → shopping events
+  const unmatchedShopping: TripEvent[] = [];
+
+  for (const shop of shoppingEvents) {
+    const cityName = shop.title.toLowerCase();
+    const matchedHotel = hotelEvents.find(
+      (h) => h.location?.toLowerCase().includes(cityName)
+    );
+    if (matchedHotel) {
+      const existing = hotelShoppingMap.get(matchedHotel.id) ?? [];
+      existing.push(shop);
+      hotelShoppingMap.set(matchedHotel.id, existing);
+    } else {
+      unmatchedShopping.push(shop);
+    }
+  }
 
   // Collect all dates: from day events + all days covered by hotels
   const dateSet = new Set<string>();
@@ -93,16 +112,16 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
     return { hotel, startRow, endRow };
   });
 
-  const hasHotels = hotelPositions.length > 0;
+  const hasRightColumn = hotelPositions.length > 0 || shoppingEvents.length > 0;
 
   return (
     <>
-      {/* Desktop: three-column grid layout */}
+      {/* Desktop: two-column grid layout */}
       <div
-        className={`hidden ${hasHotels ? "md:grid" : ""}`}
+        className={`hidden ${hasRightColumn ? "md:grid" : ""}`}
         style={{
           gridTemplateColumns: "3fr 2fr",
-          gridTemplateRows: `repeat(${sortedDates.length}, auto)`,
+          gridTemplateRows: `repeat(${sortedDates.length + (unmatchedShopping.length > 0 ? 1 : 0)}, auto)`,
           columnGap: "24px",
         }}
       >
@@ -153,25 +172,50 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
           );
         })}
 
-        {/* Right column: spanning hotel cards */}
-        {hotelPositions.map(({ hotel, startRow, endRow }) => (
+        {/* Right column: spanning hotel cards with matched shopping stacked below */}
+        {hotelPositions.map(({ hotel, startRow, endRow }) => {
+          const matchedShopping = hotelShoppingMap.get(hotel.id);
+          return (
+            <div
+              key={hotel.id}
+              style={{
+                gridColumn: 2,
+                gridRow: `${startRow} / ${endRow}`,
+              }}
+              className="relative z-10 pb-4 pt-8"
+            >
+              <div className={`flex flex-col gap-3 ${!matchedShopping ? "h-full" : ""}`}>
+                <div className={!matchedShopping ? "flex-1" : ""}>
+                  <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight={!matchedShopping} attachments={attachmentsMap?.[hotel.id]} shoppingStores={shoppingStoresMap?.[hotel.id]} />
+                </div>
+                {matchedShopping?.map((shop) => (
+                  <EventCard key={shop.id} event={shop} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[shop.id]} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Right column: unmatched shopping at the bottom */}
+        {unmatchedShopping.length > 0 && (
           <div
-            key={hotel.id}
             style={{
               gridColumn: 2,
-              gridRow: `${startRow} / ${endRow}`,
+              gridRow: sortedDates.length + 1,
             }}
             className="relative z-10 pb-4 pt-8"
           >
-            <div className="h-full">
-              <EventCard event={hotel} readOnly={readOnly} showDateRange fillHeight attachments={attachmentsMap?.[hotel.id]} shoppingStores={shoppingStoresMap?.[hotel.id]} />
+            <div className="space-y-3">
+              {unmatchedShopping.map((shop) => (
+                <EventCard key={shop.id} event={shop} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[shop.id]} />
+              ))}
             </div>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Mobile: single column (original layout), also used when no multi-day hotels */}
-      <div className={`space-y-10 ${hasHotels ? "md:hidden" : ""}`}>
+      {/* Mobile: single column (original layout), also used when no right column */}
+      <div className={`space-y-10 ${hasRightColumn ? "md:hidden" : ""}`}>
         {sortedDates.map((dateKey) => (
           <div key={dateKey}>
             <div className="mb-4 flex items-center gap-3">
@@ -196,6 +240,23 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap 
             </div>
           </div>
         ))}
+
+        {shoppingEvents.length > 0 && (
+          <div>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <h3 className="shrink-0 font-display text-lg text-foreground/70">
+                Shopping
+              </h3>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-3">
+              {shoppingEvents.map((event) => (
+                <EventCard key={event.id} event={event} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[event.id]} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
