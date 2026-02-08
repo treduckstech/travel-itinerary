@@ -118,5 +118,12 @@ Bars events follow the identical pattern to shopping events — **dateless city-
 - `RESEND_API_KEY` - Resend API key for email notifications (optional, server-side only)
 - `CRON_SECRET` - Secret for Vercel Cron job authentication (auto-provided by Vercel on Pro plans)
 
+## Git Workflow
+- `main` branch is protected — never push directly to main
+- For every task, create a feature branch: `feat/<short-description>`, `fix/<short-description>`, or `docs/<short-description>`
+- Push the branch and create a PR via `gh pr create`
+- Branch naming: lowercase, hyphens, no special characters (e.g. `feat/google-calendar-links`, `fix/timezone-offset`)
+- Squash merge is preferred
+
 ## Tracking
 - Feature roadmap and pending tasks are tracked in `TODO.md` — always keep it in sync when completing work or adding new tasks
