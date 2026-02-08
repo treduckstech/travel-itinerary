@@ -14,13 +14,14 @@ A travel planning app to organize trips, events, and prep lists — with Google 
 - **Google SSO** -- Sign in with Google via Supabase Auth
 - **Per-User Trips** -- Trips are scoped to their creator via Row Level Security
 - **Collaborative Sharing** -- Invite others by email to view and edit your trips
-- **Public Share Links** -- Generate a read-only link anyone can view without signing in
+- **Public Share Links** -- Generate a read-only link showing the itinerary (no calendar or to-do list)
 - **Trip Management** -- Create, edit, and delete trips with destinations and date ranges
 - **Events** -- Add flights, hotels, restaurants, drives, and activities to each trip with type-specific fields (departure/arrival for flights, check-in/out for hotels, origin/destination for drives, etc.)
 - **Flight Lookup** -- Auto-fill flight details from FlightAware or AirLabs by entering a flight number
 - **Restaurant Search** -- Search restaurants via BenEats API integration
 - **Place Search & Drive Time** -- Google Maps-powered place search with automatic drive time calculation
 - **Static Map Previews** -- Map thumbnails for drive routes and restaurant locations
+- **Google Calendar Integration** -- Add restaurant and activity events to Google Calendar with one click (timezone-aware)
 - **Calendar View** -- Interactive calendar highlighting trip dates and event days, with a detail panel for selected dates
 - **Prep List** -- Per-trip todo checklist with add, complete, and delete functionality
 - **Day-Grouped Itinerary** -- Events organized chronologically by day
@@ -377,7 +378,7 @@ src/
     signup/page.tsx         # Redirects to /login
     auth/callback/route.ts  # OAuth callback handler (+ admin signup email)
     friends/page.tsx        # Friends management (send/accept/decline/remove)
-    share/[token]/page.tsx  # Public read-only shared itinerary
+    share/[token]/page.tsx  # Public read-only shared itinerary (itinerary only, no calendar/todos)
     trips/
       new/page.tsx          # Create trip form
       [id]/page.tsx         # Trip detail (itinerary, calendar, prep list tabs)
@@ -424,7 +425,7 @@ src/
       place-search.tsx      # Google Places search combobox for drives
       drive-detail-card.tsx # Drive event detail with map preview
       restaurant-search.tsx # Restaurant search combobox
-      restaurant-detail-card.tsx # Restaurant detail with map preview
+      restaurant-detail-card.tsx # Restaurant detail with map preview and Google Calendar link
       hotel-search.tsx      # Hotel search combobox (Google Places)
       hotel-detail-card.tsx # Hotel detail with map preview
     todos/
@@ -458,6 +459,7 @@ src/
       middleware.ts          # Session refresh + admin route blocking
     admin.ts                # Admin email allowlist and isAdmin() check
     email.ts                # Resend email sender (fire-and-forget, no-ops without key)
+    calendar.ts             # Google Calendar URL builder (timezone-aware)
     activity-log.ts         # Client-side fire-and-forget activity logger
     rate-limit.ts           # In-memory per-user rate limiter
     types.ts                # TypeScript types matching the DB schema

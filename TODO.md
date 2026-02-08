@@ -98,6 +98,11 @@
 - [x] Bars excluded from calendar view
 - [x] Support in trip page, share page, and admin analytics
 
+## Completed (Google Calendar & Share Page)
+- [x] "Add to Google Calendar" links on restaurant and activity detail cards
+- [x] Google Calendar URL utility (`src/lib/calendar.ts`) with timezone-aware date formatting
+- [x] Public share page shows itinerary only (removed calendar and to-do tabs)
+
 ## Phase 3 - Enhancements
 - [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)
 - [x] Drag-and-drop to-do reordering (with @dnd-kit)
