@@ -3,12 +3,9 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { createServiceClient } from "@/lib/supabase/service";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TripCalendar } from "@/components/calendar/trip-calendar";
 import { EventList } from "@/components/events/event-list";
-import { TodoList } from "@/components/todos/todo-list";
 import { MapPin, Calendar } from "lucide-react";
-import type { Trip, TripEvent, Todo, EventAttachment, ShoppingStore, BarVenue } from "@/lib/types";
+import type { Trip, TripEvent, EventAttachment, ShoppingStore, BarVenue } from "@/lib/types";
 
 interface SharePageProps {
   params: Promise<{ token: string }>;
@@ -28,21 +25,13 @@ export default async function SharePage({ params }: SharePageProps) {
 
   const typedTrip = trip as Trip;
 
-  const [{ data: events }, { data: todos }] = await Promise.all([
-    supabase
-      .from("events")
-      .select("*")
-      .eq("trip_id", typedTrip.id)
-      .order("start_datetime", { ascending: true }),
-    supabase
-      .from("todos")
-      .select("*")
-      .eq("trip_id", typedTrip.id)
-      .order("sort_order", { ascending: true }),
-  ]);
+  const { data: events } = await supabase
+    .from("events")
+    .select("*")
+    .eq("trip_id", typedTrip.id)
+    .order("start_datetime", { ascending: true });
 
   const typedEvents = (events as TripEvent[] | null) ?? [];
-  const typedTodos = (todos as Todo[] | null) ?? [];
 
   // Fetch attachments for activity events
   const activityEventIds = typedEvents
@@ -122,31 +111,7 @@ export default async function SharePage({ params }: SharePageProps) {
         </div>
       </div>
 
-      <Tabs defaultValue="itinerary">
-        <TabsList>
-          <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="todos">
-            To Do ({typedTodos.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="itinerary" className="mt-6">
-          <EventList events={typedEvents} readOnly attachmentsMap={attachmentsMap} shoppingStoresMap={shoppingStoresMap} barVenuesMap={barVenuesMap} />
-        </TabsContent>
-
-        <TabsContent value="calendar" className="mt-6">
-          <TripCalendar
-            events={typedEvents}
-            tripStart={typedTrip.start_date}
-            tripEnd={typedTrip.end_date}
-          />
-        </TabsContent>
-
-        <TabsContent value="todos" className="mt-6">
-          <TodoList tripId={typedTrip.id} todos={typedTodos} readOnly />
-        </TabsContent>
-      </Tabs>
+      <EventList events={typedEvents} readOnly attachmentsMap={attachmentsMap} shoppingStoresMap={shoppingStoresMap} barVenuesMap={barVenuesMap} />
     </div>
   );
 }
