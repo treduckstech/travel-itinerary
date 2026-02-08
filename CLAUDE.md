@@ -62,6 +62,7 @@ Each travel sub-type has an expandable detail card:
 - `DriveDetailCard` — route map, addresses, Google Maps link
 - `TrainDetailCard` — route visualization with station resolution, operator, class, coach/seat, confirmation number
 - `RestaurantDetailCard` — cuisine, price, rating, BenEats link, Google Maps link, Add to Google Calendar link
+- `ActivityDetailCard` — notes, file attachments, Google Maps link, Add to Google Calendar link
 - `HotelDetailCard` — address, Google Maps link
 - `ShoppingDetailCard` — list of stores (with Google Maps links), add/remove stores via PlaceSearch, category tags
 - `BarDetailCard` — list of venues (with Google Maps links), add/remove venues via PlaceSearch, notes

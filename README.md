@@ -426,6 +426,7 @@ src/
       drive-detail-card.tsx # Drive event detail with map preview
       restaurant-search.tsx # Restaurant search combobox
       restaurant-detail-card.tsx # Restaurant detail with map preview and Google Calendar link
+      activity-detail-card.tsx   # Activity detail with notes, attachments, and Google Calendar link
       hotel-search.tsx      # Hotel search combobox (Google Places)
       hotel-detail-card.tsx # Hotel detail with map preview
     todos/
