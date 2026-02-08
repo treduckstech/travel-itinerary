@@ -13,7 +13,7 @@
 
 ## Completed (Phase 2)
 - [x] Share trips with other users (collaborative editing)
-- [x] Public read-only share links (via share token)
+- [x] Public read-only share links (via share token, itinerary only)
 - [x] Flight lookup (FlightAware + AirLabs fallback)
 - [x] Restaurant search (BenEats API integration)
 - [x] Place search and drive time calculation (Google Maps APIs)
