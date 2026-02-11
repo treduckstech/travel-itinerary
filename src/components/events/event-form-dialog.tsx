@@ -134,8 +134,18 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
     return "";
   });
-  const [driveFromAddress, setDriveFromAddress] = useState("");
-  const [driveToAddress, setDriveToAddress] = useState("");
+  const [driveFromAddress, setDriveFromAddress] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "drive" && event.description?.includes("|||")) {
+      return event.description.split("|||")[0]?.trim() || "";
+    }
+    return "";
+  });
+  const [driveToAddress, setDriveToAddress] = useState(() => {
+    if (event?.type === "travel" && event.sub_type === "drive" && event.description?.includes("|||")) {
+      return event.description.split("|||")[1]?.trim() || "";
+    }
+    return "";
+  });
   const [driveDuration, setDriveDuration] = useState<number | null>(null);
   const [driveLoading, setDriveLoading] = useState(false);
   const [flightDuration, setFlightDuration] = useState<number | null>(null);
@@ -187,6 +197,14 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   const [barVenue, setBarVenue] = useState<PlaceResult | null>(null);
   const [barNote, setBarNote] = useState("");
   const isEditing = !!event;
+
+  // Recalculate drive time when editing a drive event
+  useEffect(() => {
+    if (isEditing && event.type === "travel" && event.sub_type === "drive" && open && driveFromAddress && driveToAddress) {
+      fetchDriveTime(driveFromAddress, driveToAddress, startDatetime || undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Load existing attachments when editing an activity event
   useEffect(() => {
@@ -310,7 +328,8 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
   }
 
   function computeArrival(departureDatetime: string, durationMin: number): string {
-    const dep = new Date(departureDatetime);
+    // Force UTC parsing so naive datetime arithmetic isn't skewed by browser timezone
+    const dep = new Date(departureDatetime + "Z");
     const arr = new Date(dep.getTime() + durationMin * 60000);
     return arr.toISOString().slice(0, 16);
   }

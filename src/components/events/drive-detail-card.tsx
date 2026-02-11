@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Car, Clock, ExternalLink, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Car, Clock, ExternalLink, Loader2, MapPin } from "lucide-react";
 import type { TripEvent } from "@/lib/types";
 
 function parseAddresses(
@@ -24,10 +24,7 @@ function parseAddresses(
   return null;
 }
 
-function formatDuration(start: string, end: string): string {
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms <= 0) return "";
-  const totalMin = Math.round(ms / 60000);
+function formatMinutes(totalMin: number): string {
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   if (h === 0) return `${m}m`;
@@ -36,9 +33,33 @@ function formatDuration(start: string, end: string): string {
 
 export function DriveDetailCard({ event }: { event: TripEvent }) {
   const [mapError, setMapError] = useState(false);
+  const [driveMinutes, setDriveMinutes] = useState<number | null>(null);
+  const [driveLoading, setDriveLoading] = useState(false);
   const addresses = parseAddresses(event.description, event.location);
-  const duration = event.end_datetime
-    ? formatDuration(event.start_datetime, event.end_datetime)
+
+  // Fetch actual drive time from Google Maps Distance Matrix API
+  useEffect(() => {
+    if (!addresses) return;
+    let cancelled = false;
+    setDriveLoading(true);
+    fetch(
+      `/api/places/distance?origin=${encodeURIComponent(addresses.origin)}&destination=${encodeURIComponent(addresses.destination)}`
+    )
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.duration_minutes) {
+          setDriveMinutes(data.duration_minutes);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setDriveLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [addresses?.origin, addresses?.destination]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const duration = driveMinutes != null
+    ? formatMinutes(driveMinutes)
     : null;
 
   const directionsUrl = addresses
@@ -67,12 +88,17 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-        {duration && (
+        {driveLoading ? (
+          <span className="flex items-center gap-1.5">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Calculating...
+          </span>
+        ) : duration ? (
           <span className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
             {duration} drive
           </span>
-        )}
+        ) : null}
 
         {addresses && (
           <>
