@@ -33,7 +33,6 @@ import { stations } from "@/data/stations";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
 import { HotelSearch } from "@/components/events/hotel-search";
 import { PlaceSearch } from "@/components/events/place-search";
-import { TimezoneCombobox } from "@/components/events/timezone-combobox";
 import { parseTimezone, buildTimezone, getBrowserTimezone, naiveToUtc, utcToNaive } from "@/lib/timezone";
 import { extractCityFromAddress } from "@/lib/address";
 
@@ -1533,19 +1532,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                 </div>
               ) : null}
 
-              {type !== "travel" && type !== "shopping" && type !== "bars" && (
-                <div className="space-y-2">
-                  <Label>Timezone</Label>
-                  <TimezoneCombobox
-                    value={startTimezone}
-                    onSelect={(iana) => {
-                      setStartTimezone(iana);
-                      setEndTimezone(iana);
-                    }}
-                    placeholder="Select timezone"
-                  />
-                </div>
-              )}
 
               {!(type === "travel" && subType === "train") && !(type === "shopping" && !isEditing) && !(type === "bars" && !isEditing) && (
                 <>
