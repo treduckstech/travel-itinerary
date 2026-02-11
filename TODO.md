@@ -106,6 +106,15 @@
 - [x] Google Calendar URL utility (`src/lib/calendar.ts`) with timezone-aware date formatting
 - [x] Public share page shows itinerary only (removed calendar and to-do tabs)
 
+## Completed (Auto-Timezone Detection)
+- [x] Auto-detect timezone from event location via Google Time Zone API (`/api/places/timezone`)
+- [x] IANA timezone data added to all airports (168 entries) and stations (200 entries) for instant lookup
+- [x] Flights: timezone auto-set from static airport data on airport selection and flight lookup
+- [x] Trains/Ferries: timezone auto-set from static station data on station selection
+- [x] Drives: timezone auto-detected for both origin (departure tz) and destination (arrival tz) from coordinates
+- [x] Activities/Hotels/Restaurants: timezone auto-detected from place coordinates on selection
+- [x] Manual timezone override still available via TimezoneCombobox
+
 ## Phase 3 - Enhancements
 - [x] Timezone support for all events (single tz for activities/restaurants/hotels, dual tz for flights/trains/ferries/drives)
 - [x] Drag-and-drop to-do reordering (with @dnd-kit)
