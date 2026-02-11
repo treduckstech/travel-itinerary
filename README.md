@@ -20,6 +20,7 @@ A travel planning app to organize trips, events, and prep lists — with Google 
 - **Flight Lookup** -- Auto-fill flight details from FlightAware or AirLabs by entering a flight number
 - **Restaurant Search** -- Search restaurants via BenEats API integration
 - **Place Search & Drive Time** -- Google Maps-powered place search with automatic drive time calculation
+- **Auto-Timezone Detection** -- Timezone auto-detected from event location: instant lookup for airports/stations, Google Time Zone API for coordinates
 - **Static Map Previews** -- Map thumbnails for drive routes and restaurant locations
 - **Google Calendar Integration** -- Add restaurant and activity events to Google Calendar with one click (timezone-aware)
 - **Calendar View** -- Interactive calendar highlighting trip dates and event days, with a detail panel for selected dates
@@ -189,9 +190,9 @@ After completing the setup above, start the dev server and sign in with Google f
 
 This migrates any existing trips to your account and makes `user_id` required for all future trips.
 
-### 6. Set up Google Maps API (optional -- for drive place search and auto drive time)
+### 6. Set up Google Maps API (optional -- for place search, drive time, and timezone detection)
 
-The drive sub-type uses Google Maps to power place search and automatic drive time calculation. Without this key, origin/destination fields fall back to plain text input with no auto-calculation.
+Google Maps powers place search, automatic drive time calculation, and timezone auto-detection. Without this key, origin/destination fields fall back to plain text input with no auto-calculation, and timezones default to the browser timezone.
 
 #### Create a Google Cloud project and enable APIs
 
@@ -201,6 +202,7 @@ The drive sub-type uses Google Maps to power place search and automatic drive ti
 4. Search for and enable each of these APIs:
    - **Places API** -- powers the place search combobox (search for "Places API" in the library, _not_ "Places API (New)")
    - **Distance Matrix API** -- calculates drive time between two places (`distance-matrix-backend.googleapis.com`)
+   - **Time Zone API** -- auto-detects timezone from coordinates when selecting event locations
 
 #### Create an API key
 
@@ -209,7 +211,7 @@ The drive sub-type uses Google Maps to power place search and automatic drive ti
 3. Copy the generated key
 4. (Recommended) Click **Edit API key** to add restrictions:
    - Under **Application restrictions**, select **IP addresses** and add your server's IP (or leave unrestricted for local development)
-   - Under **API restrictions**, select **Restrict key** and choose only **Places API** and **Distance Matrix API**
+   - Under **API restrictions**, select **Restrict key** and choose only **Places API**, **Distance Matrix API**, and **Time Zone API**
 5. Click **Save**
 
 #### Add the key to your environment
@@ -399,6 +401,7 @@ src/
       flights/lookup/route.ts        # GET: flight data lookup (rate limited)
       places/search/route.ts         # GET: Google Places search (rate limited)
       places/distance/route.ts       # GET: drive time calculation (rate limited)
+      places/timezone/route.ts       # GET: timezone lookup from coordinates (rate limited)
       maps/static/route.ts           # GET: static map image proxy (rate limited)
       restaurants/search/route.ts    # GET: restaurant search (rate limited)
       admin/stats/route.ts           # GET: dashboard stats

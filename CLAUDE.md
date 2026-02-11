@@ -53,8 +53,8 @@ The `description` field uses `|||` as a separator to store structured data witho
 - **Bars:** Not used (venues tracked in `bar_venues` table with per-venue Google Maps URLs)
 
 ### Stations & Airports
-- Airport data in `src/data/airports.ts` — used by `AirportCombobox` for flight forms
-- Station data in `src/data/stations.ts` — used by `StationCombobox` for train and ferry forms
+- Airport data in `src/data/airports.ts` — used by `AirportCombobox` for flight forms; includes `tz` field with IANA timezone for auto-detection
+- Station data in `src/data/stations.ts` — used by `StationCombobox` for train and ferry forms; includes `tz` field with IANA timezone for auto-detection
 - Stations include US (Amtrak), UK, France, Germany, Italy (including Cinque Terre, Lake Como, Sicily), Spain, Netherlands, Belgium, Switzerland, Austria, Scandinavia, Eastern Europe, Portugal, Ireland, and ferry terminals
 
 ### Event Detail Cards
@@ -68,6 +68,7 @@ Each travel sub-type has an expandable detail card:
 - `BarDetailCard` — list of venues (with Google Maps links), add/remove venues via PlaceSearch, notes
 - Google Calendar URL builder in `src/lib/calendar.ts` — `buildGoogleCalendarUrl()` converts UTC times to event timezone, uses `ctz` param
 - `computeArrival()` in event form uses UTC-forced parsing (`new Date(naive + "Z")`) to avoid browser timezone skew when calculating arrival from departure + duration
+- **Auto-timezone detection**: When a place is selected in the event form, timezone is auto-detected — from static `tz` field for airports/stations, or via `/api/places/timezone` (Google Time Zone API) for coordinates from PlaceSearch/BenEats. Manual override via TimezoneCombobox always available.
 
 ### Shopping Event Architecture
 Shopping events are **dateless city-based parent cards** (not date-ranged like hotels):
@@ -115,7 +116,7 @@ Bars events follow the identical pattern to shopping events — **dateless city-
 - `FLIGHTAWARE_API_KEY` - FlightAware AeroAPI key for flight lookup (optional, server-side only)
 - `AIRLABS_API_KEY` - AirLabs API key for flight lookup fallback (optional, server-side only)
 - `BENEATS_API_KEY` - BenEats API key for restaurant search (optional, server-side only)
-- `GOOGLE_MAPS_API_KEY` - Google Maps API key for place search and drive time calculation (optional, server-side only; requires Places API and Distance Matrix API)
+- `GOOGLE_MAPS_API_KEY` - Google Maps API key for place search, drive time calculation, and timezone detection (optional, server-side only; requires Places API, Distance Matrix API, and Time Zone API)
 - `RESEND_API_KEY` - Resend API key for email notifications (optional, server-side only)
 - `CRON_SECRET` - Secret for Vercel Cron job authentication (auto-provided by Vercel on Pro plans)
 
@@ -125,6 +126,13 @@ Bars events follow the identical pattern to shopping events — **dateless city-
 - Push the branch and create a PR via `gh pr create`
 - Branch naming: lowercase, hyphens, no special characters (e.g. `feat/google-calendar-links`, `fix/timezone-offset`)
 - Squash merge is preferred
+
+## Pre-Merge Checklist
+Before merging any PR, update the following documentation files:
+- `TODO.md` — Mark completed items and add new entries as needed
+- `README.md` — Update features, project structure, and setup instructions if applicable
+- `CLAUDE.md` — Update patterns, environment variables, and technical guidance
+- `MEMORY.md` — Add a session summary with what was done, key files, and key patterns
 
 ## Tracking
 - Feature roadmap and pending tasks are tracked in `TODO.md` — always keep it in sync when completing work or adding new tasks
