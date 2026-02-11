@@ -1087,25 +1087,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Departure Timezone</Label>
-                      <TimezoneCombobox
-                        value={startTimezone}
-                        onSelect={setStartTimezone}
-                        placeholder="Departure timezone"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Arrival Timezone</Label>
-                      <TimezoneCombobox
-                        value={endTimezone}
-                        onSelect={setEndTimezone}
-                        placeholder="Arrival timezone"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
                       <Label htmlFor="train-departure">Departure</Label>
                       <Input
                         id="train-departure"
@@ -1346,25 +1327,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Departure Timezone</Label>
-                      <TimezoneCombobox
-                        value={startTimezone}
-                        onSelect={setStartTimezone}
-                        placeholder="Departure timezone"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Arrival Timezone</Label>
-                      <TimezoneCombobox
-                        value={endTimezone}
-                        onSelect={setEndTimezone}
-                        placeholder="Arrival timezone"
-                      />
-                    </div>
-                  </div>
-
                   {driveLoading && (
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -1519,24 +1481,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                         value={arrStation}
                         onSelect={(code) => { setArrStation(code); const tz = lookupStationTimezone(code); if (tz) setEndTimezone(tz); }}
                         placeholder="Arrival"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Departure Timezone</Label>
-                      <TimezoneCombobox
-                        value={startTimezone}
-                        onSelect={setStartTimezone}
-                        placeholder="Departure timezone"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Arrival Timezone</Label>
-                      <TimezoneCombobox
-                        value={endTimezone}
-                        onSelect={setEndTimezone}
-                        placeholder="Arrival timezone"
                       />
                     </div>
                   </div>
