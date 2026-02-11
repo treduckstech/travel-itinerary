@@ -78,6 +78,9 @@
 
 ## Bugs
 - [x] Restaurant Google Maps link opens coordinates instead of the restaurant listing (should prefer place_id + name over raw coordinates)
+- [x] Drive time vastly incorrect: `computeArrival()` parsed naive datetimes using browser timezone instead of UTC, skewing end_datetime by the timezone offset
+- [x] Drive edit didn't recalculate: `driveFromAddress`/`driveToAddress` weren't initialized from `event.description` on edit, so drive time was never recalculated
+- [x] DriveDetailCard now fetches live drive time from Google Maps Distance Matrix API instead of computing from datetime difference
 
 ## Completed (Shopping Redesign)
 - [x] Shopping events redesigned as dateless, city-based parent cards

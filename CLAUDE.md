@@ -59,7 +59,7 @@ The `description` field uses `|||` as a separator to store structured data witho
 
 ### Event Detail Cards
 Each travel sub-type has an expandable detail card:
-- `DriveDetailCard` — route map, addresses, Google Maps link
+- `DriveDetailCard` — route map, addresses, live drive time from Distance Matrix API, Google Maps link
 - `TrainDetailCard` — route visualization with station resolution, operator, class, coach/seat, confirmation number
 - `RestaurantDetailCard` — cuisine, price, rating, BenEats link, Google Maps link, Add to Google Calendar link
 - `ActivityDetailCard` — notes, file attachments, Google Maps link, Add to Google Calendar link
@@ -67,6 +67,7 @@ Each travel sub-type has an expandable detail card:
 - `ShoppingDetailCard` — list of stores (with Google Maps links), add/remove stores via PlaceSearch, category tags
 - `BarDetailCard` — list of venues (with Google Maps links), add/remove venues via PlaceSearch, notes
 - Google Calendar URL builder in `src/lib/calendar.ts` — `buildGoogleCalendarUrl()` converts UTC times to event timezone, uses `ctz` param
+- `computeArrival()` in event form uses UTC-forced parsing (`new Date(naive + "Z")`) to avoid browser timezone skew when calculating arrival from departure + duration
 
 ### Shopping Event Architecture
 Shopping events are **dateless city-based parent cards** (not date-ranged like hotels):

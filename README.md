@@ -423,7 +423,7 @@ src/
       airport-combobox.tsx  # Airport search combobox for flights
       station-combobox.tsx  # Station search combobox for trains
       place-search.tsx      # Google Places search combobox for drives
-      drive-detail-card.tsx # Drive event detail with map preview
+      drive-detail-card.tsx # Drive event detail with map preview and live drive time
       restaurant-search.tsx # Restaurant search combobox
       restaurant-detail-card.tsx # Restaurant detail with map preview and Google Calendar link
       activity-detail-card.tsx   # Activity detail with notes, attachments, and Google Calendar link
