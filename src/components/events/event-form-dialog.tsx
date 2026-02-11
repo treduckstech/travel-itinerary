@@ -1501,24 +1501,6 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Departure Timezone</Label>
-                      <TimezoneCombobox
-                        value={startTimezone}
-                        onSelect={setStartTimezone}
-                        placeholder="Departure timezone"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Arrival Timezone</Label>
-                      <TimezoneCombobox
-                        value={endTimezone}
-                        onSelect={setEndTimezone}
-                        placeholder="Arrival timezone"
-                      />
-                    </div>
-                  </div>
                 </>
               ) : type === "travel" && subType === "ferry" ? (
                 <>
