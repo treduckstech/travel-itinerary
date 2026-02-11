@@ -27,7 +27,9 @@ import { Plus, Pencil, Search, Loader2, MapPin, Paperclip, X, FileText, ImageIco
 import type { TripEvent, EventType, TravelSubType, FlightLookupResult, BenEatsRestaurant, PlaceResult, EventAttachment } from "@/lib/types";
 import { logActivity } from "@/lib/activity-log";
 import { AirportCombobox } from "@/components/events/airport-combobox";
+import { airports } from "@/data/airports";
 import { StationCombobox } from "@/components/events/station-combobox";
+import { stations } from "@/data/stations";
 import { RestaurantSearch } from "@/components/events/restaurant-search";
 import { HotelSearch } from "@/components/events/hotel-search";
 import { PlaceSearch } from "@/components/events/place-search";
@@ -373,6 +375,27 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     }
   }
 
+  async function fetchTimezoneFromCoords(lat: number, lng: number): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/places/timezone?lat=${lat}&lng=${lng}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.timezone || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function lookupAirportTimezone(iata: string): string | null {
+    const airport = airports.find((a) => a.iata === iata);
+    return airport?.tz ?? null;
+  }
+
+  function lookupStationTimezone(code: string): string | null {
+    const station = stations.find((s) => s.code === code);
+    return station?.tz ?? null;
+  }
+
   async function handleFlightLookup() {
     if (!title.trim()) return;
     setLookupLoading(true);
@@ -400,9 +423,13 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
       setTitle(result.title);
       if (result.departure_airport) {
         setDepAirport(result.departure_airport);
+        const tz = lookupAirportTimezone(result.departure_airport);
+        if (tz) setStartTimezone(tz);
       }
       if (result.arrival_airport) {
         setArrAirport(result.arrival_airport);
+        const tz = lookupAirportTimezone(result.arrival_airport);
+        if (tz) setEndTimezone(tz);
       }
       if (result.duration_minutes) {
         setFlightDuration(result.duration_minutes);
@@ -754,6 +781,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
         ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts.join(", "))}`
         : "");
     }
+
+    if (restaurant.latitude && restaurant.longitude) {
+      fetchTimezoneFromCoords(restaurant.latitude, restaurant.longitude).then((tz) => {
+        if (tz) { setStartTimezone(tz); setEndTimezone(tz); }
+      });
+    }
   }
 
   function handleHotelSelect(place: PlaceResult) {
@@ -764,6 +797,12 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
     } else {
       const query = [place.name, place.address].filter(Boolean).join(", ");
       setDescription(query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "");
+    }
+
+    if (place.lat && place.lng) {
+      fetchTimezoneFromCoords(place.lat, place.lng).then((tz) => {
+        if (tz) { setStartTimezone(tz); setEndTimezone(tz); }
+      });
     }
   }
 
@@ -966,7 +1005,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                   <AirportCombobox
                     id="dep-airport"
                     value={depAirport}
-                    onSelect={setDepAirport}
+                    onSelect={(iata) => { setDepAirport(iata); const tz = lookupAirportTimezone(iata); if (tz) setStartTimezone(tz); }}
                     placeholder="Search airports..."
                   />
                 </div>
@@ -1032,7 +1071,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       <Label>From</Label>
                       <StationCombobox
                         value={depStation}
-                        onSelect={setDepStation}
+                        onSelect={(code) => { setDepStation(code); const tz = lookupStationTimezone(code); if (tz) setStartTimezone(tz); }}
                         placeholder="Departure station"
                       />
                     </div>
@@ -1040,7 +1079,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       <Label>To</Label>
                       <StationCombobox
                         value={arrStation}
-                        onSelect={setArrStation}
+                        onSelect={(code) => { setArrStation(code); const tz = lookupStationTimezone(code); if (tz) setEndTimezone(tz); }}
                         placeholder="Arrival station"
                       />
                     </div>
@@ -1269,6 +1308,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                           setDriveFromAddress(place.address || place.name);
                           const destAddr = driveToAddress || driveTo;
                           if (destAddr) fetchDriveTime(place.address || place.name, destAddr);
+                          if (place.lat && place.lng) {
+                            fetchTimezoneFromCoords(place.lat, place.lng).then((tz) => { if (tz) setStartTimezone(tz); });
+                          }
                         }}
                         onManualEntry={(name: string) => {
                           setDriveFrom(name);
@@ -1289,6 +1331,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                           setDriveToAddress(place.address || place.name);
                           const origAddr = driveFromAddress || driveFrom;
                           if (origAddr) fetchDriveTime(origAddr, place.address || place.name);
+                          if (place.lat && place.lng) {
+                            fetchTimezoneFromCoords(place.lat, place.lng).then((tz) => { if (tz) setEndTimezone(tz); });
+                          }
                         }}
                         onManualEntry={(name: string) => {
                           setDriveTo(name);
@@ -1443,7 +1488,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       <Label>From</Label>
                       <AirportCombobox
                         value={depAirport}
-                        onSelect={setDepAirport}
+                        onSelect={(iata) => { setDepAirport(iata); const tz = lookupAirportTimezone(iata); if (tz) setStartTimezone(tz); }}
                         placeholder="Departure"
                       />
                     </div>
@@ -1451,7 +1496,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       <Label>To</Label>
                       <AirportCombobox
                         value={arrAirport}
-                        onSelect={setArrAirport}
+                        onSelect={(iata) => { setArrAirport(iata); const tz = lookupAirportTimezone(iata); if (tz) setEndTimezone(tz); }}
                         placeholder="Arrival"
                       />
                     </div>
@@ -1482,7 +1527,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       <Label>From</Label>
                       <StationCombobox
                         value={depStation}
-                        onSelect={setDepStation}
+                        onSelect={(code) => { setDepStation(code); const tz = lookupStationTimezone(code); if (tz) setStartTimezone(tz); }}
                         placeholder="Departure"
                       />
                     </div>
@@ -1490,7 +1535,7 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                       <Label>To</Label>
                       <StationCombobox
                         value={arrStation}
-                        onSelect={setArrStation}
+                        onSelect={(code) => { setArrStation(code); const tz = lookupStationTimezone(code); if (tz) setEndTimezone(tz); }}
                         placeholder="Arrival"
                       />
                     </div>
@@ -1528,6 +1573,9 @@ export function EventFormDialog({ tripId, event }: EventFormDialogProps) {
                         } else {
                           const query = [place.name, place.address].filter(Boolean).join(", ");
                           setDescription(query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "");
+                        }
+                        if (place.lat && place.lng) {
+                          fetchTimezoneFromCoords(place.lat, place.lng).then((tz) => { if (tz) { setStartTimezone(tz); setEndTimezone(tz); } });
                         }
                       }}
                       onManualEntry={(name: string) => {
