@@ -81,7 +81,7 @@
   --accent: oklch(0.93 0.03 195);
   --accent-foreground: oklch(0.30 0.10 195);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.01 65);
+  --border: oklch(0.93 0.008 65);
   --input: oklch(0.91 0.01 65);
   --ring: oklch(0.48 0.16 195);
   /* Warm coral accent */
@@ -173,4 +173,36 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+}
+
+/* Collapsible expand/collapse animations */
+@keyframes collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+[data-slot="collapsible-content"][data-state="open"] {
+  animation: collapsible-down 200ms ease-out;
+}
+
+[data-slot="collapsible-content"][data-state="closed"] {
+  animation: collapsible-up 200ms ease-out;
+  overflow: hidden;
 }

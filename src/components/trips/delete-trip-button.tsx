@@ -21,10 +21,14 @@ interface DeleteTripButtonProps {
   tripId: string;
   eventCount?: number;
   todoCount?: number;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0 }: DeleteTripButtonProps) {
-  const [open, setOpen] = useState(false);
+export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0, open: controlledOpen, onOpenChange }: DeleteTripButtonProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -49,12 +53,14 @@ export function DeleteTripButton({ tripId, eventCount = 0, todoCount = 0 }: Dele
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="destructive" size="sm">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Trip
-        </Button>
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="destructive" size="sm">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Trip
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Delete Trip</DialogTitle>

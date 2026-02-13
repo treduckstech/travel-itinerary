@@ -39,7 +39,7 @@ export default async function RootLayout({
         {isAdmin ? (
           children
         ) : (
-          <main className="container mx-auto px-4 py-8">{children}</main>
+          <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
         )}
         <Toaster position="bottom-right" richColors />
       </body>

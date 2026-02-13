@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExternalLink, MapPin, Plus, Trash2, Wine, Pencil } from "lucide-react";
 import { PlaceSearch } from "@/components/events/place-search";
+import { DetailCardWrapper } from "./detail-card-wrapper";
 import { extractCityFromAddress } from "@/lib/address";
 import type { TripEvent, BarVenue, PlaceResult } from "@/lib/types";
 
@@ -138,7 +139,7 @@ export function BarDetailCard({ event, venues, readOnly }: BarDetailCardProps) {
   if (!venues.length && !event.notes && readOnly) return null;
 
   return (
-    <div className="space-y-3 pt-3 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
+    <DetailCardWrapper>
       {venues.length > 0 && (
         <div className="space-y-2">
           {venues.map((venue) => (
@@ -248,6 +249,6 @@ export function BarDetailCard({ event, venues, readOnly }: BarDetailCardProps) {
           {event.notes}
         </p>
       )}
-    </div>
+    </DetailCardWrapper>
   );
 }
