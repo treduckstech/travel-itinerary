@@ -260,7 +260,7 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
               <div className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{displayTitle}</span>
                 {metaSegments.length > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 overflow-hidden">
                     {metaSegments.map((seg, i) => (
                       <span key={i} className="flex items-center gap-1">
                         {i > 0 && <span className="text-muted-foreground/50">&middot;</span>}
