@@ -21,10 +21,14 @@ import { logActivity } from "@/lib/activity-log";
 interface ShareDialogProps {
   tripId: string;
   shareToken: string | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ShareDialog({ tripId, shareToken, open: controlledOpen, onOpenChange }: ShareDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [shares, setShares] = useState<TripShare[]>([]);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -168,12 +172,14 @@ export function ShareDialog({ tripId, shareToken }: ShareDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Share2 className="mr-2 h-4 w-4" />
-          Share
-        </Button>
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Share2 className="mr-2 h-4 w-4" />
+            Share
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Share Trip</DialogTitle>

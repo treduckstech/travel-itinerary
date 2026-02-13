@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Car, Clock, ExternalLink, Loader2, MapPin } from "lucide-react";
+import { Car, Clock, Loader2, MapPin } from "lucide-react";
+import { DetailCardWrapper, DetailActionLink, DetailMapImage } from "./detail-card-wrapper";
 import type { TripEvent } from "@/lib/types";
 
 function parseAddresses(
@@ -32,7 +33,6 @@ function formatMinutes(totalMin: number): string {
 }
 
 export function DriveDetailCard({ event }: { event: TripEvent }) {
-  const [mapError, setMapError] = useState(false);
   const [driveMinutes, setDriveMinutes] = useState<number | null>(null);
   const [driveLoading, setDriveLoading] = useState(false);
   const addresses = parseAddresses(event.description, event.location);
@@ -73,18 +73,9 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
   if (!addresses && !duration) return null;
 
   return (
-    <div className="space-y-3 pt-3 border-t border-border/50">
-      {mapUrl && !mapError && (
-        <div className="overflow-hidden rounded-md max-w-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={mapUrl}
-            alt="Route map"
-            className="w-full h-auto"
-            loading="lazy"
-            onError={() => setMapError(true)}
-          />
-        </div>
+    <DetailCardWrapper>
+      {mapUrl && (
+        <DetailMapImage src={mapUrl} alt="Route map" />
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
@@ -115,18 +106,10 @@ export function DriveDetailCard({ event }: { event: TripEvent }) {
       </div>
 
       {directionsUrl && (
-        <a
-          href={directionsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
-          <Car className="h-3.5 w-3.5" />
+        <DetailActionLink href={directionsUrl} icon={Car}>
           Open in Google Maps
-          <ExternalLink className="h-3 w-3" />
-        </a>
+        </DetailActionLink>
       )}
-    </div>
+    </DetailCardWrapper>
   );
 }

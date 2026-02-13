@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TrainFront, Clock, Ticket, Armchair, FileText, ImageIcon, ExternalLink, Loader2 } from "lucide-react";
 import { stations } from "@/data/stations";
+import { DetailCardWrapper } from "./detail-card-wrapper";
 import type { TripEvent, EventAttachment } from "@/lib/types";
 
 function resolveStation(code: string): { name: string; city: string } | null {
@@ -88,7 +89,7 @@ export function TrainDetailCard({ event, attachments }: { event: TripEvent; atta
   }
 
   return (
-    <div className="space-y-3 pt-3 border-t border-border/50">
+    <DetailCardWrapper>
       {route && (
         <div className="flex items-center gap-2 sm:gap-3 text-sm">
           <div className="text-right min-w-0 flex-1">
@@ -187,6 +188,6 @@ export function TrainDetailCard({ event, attachments }: { event: TripEvent; atta
           ))}
         </div>
       )}
-    </div>
+    </DetailCardWrapper>
   );
 }

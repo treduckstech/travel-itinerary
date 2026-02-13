@@ -11,10 +11,9 @@ import type { Trip } from "@/lib/types";
 
 interface TripCardProps {
   trip: Trip;
-  featured?: boolean;
 }
 
-export function TripCard({ trip, featured = false }: TripCardProps) {
+export function TripCard({ trip }: TripCardProps) {
   const now = new Date();
   const start = new Date(trip.start_date + "T00:00:00");
   const end = new Date(trip.end_date + "T00:00:00");
@@ -41,25 +40,16 @@ export function TripCard({ trip, featured = false }: TripCardProps) {
 
   const countdown = getCountdown();
 
-  const borderColor =
-    status === "active"
-      ? "border-l-event-activity"
-      : status === "upcoming"
-      ? "border-l-primary"
-      : "border-l-transparent";
-
   return (
-    <Link href={`/trips/${trip.id}`} className={featured ? "sm:col-span-2 lg:col-span-2" : ""}>
-      <Card className={`border-l-4 ${borderColor} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${
-        featured ? "shadow-sm" : ""
-      } ${status === "past" ? "opacity-75" : ""}`}>
-        <CardHeader className="pb-2">
+    <Link href={`/trips/${trip.id}`}>
+      <Card className={`border transition-all duration-200 hover:border-primary/30 hover:shadow-sm ${status === "past" ? "opacity-75" : ""}`}>
+        <CardHeader className="pb-1.5">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className={`truncate font-display ${featured ? "text-2xl" : "text-lg"}`}>
+            <CardTitle className="truncate font-display text-lg">
               {trip.name}
             </CardTitle>
             {countdown && (
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              <span className={`shrink-0 rounded-md px-2.5 py-0.5 text-xs font-semibold ${
                 status === "active"
                   ? "bg-event-activity-bg text-event-activity"
                   : "bg-warm/10 text-warm"

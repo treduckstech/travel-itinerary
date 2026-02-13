@@ -185,7 +185,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
               className="pointer-events-none relative z-0 flex items-start"
             >
               <div className="flex w-full items-center gap-3">
-                <h3 className={`shrink-0 font-display text-foreground/70 ${hasEvents ? "text-lg" : "text-sm text-muted-foreground"}`}>
+                <h3 className={`shrink-0 font-display ${hasEvents ? "text-base text-foreground/70" : "text-sm text-muted-foreground"}`}>
                   {format(parseISO(dateKey), "EEEE, MMMM d")}
                 </h3>
                 <div className={`h-px flex-1 ${hasEvents ? "bg-border" : "bg-border/50"}`} />
@@ -205,7 +205,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
               className="relative z-10 min-h-16 pb-4 pt-8"
             >
               {dateEvents.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {dateEvents
                     .sort(
                       (a, b) =>
@@ -250,7 +250,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
               }}
               className="relative z-10 pb-4 pt-8"
             >
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {matchedCol3.map((ev) => (
                   <EventCard key={ev.id} event={ev} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[ev.id]} barVenues={barVenuesMap?.[ev.id]} />
                 ))}
@@ -268,7 +268,7 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
             }}
             className="relative z-10 pb-4 pt-8"
           >
-            <div className="space-y-3">
+            <div className="space-y-2">
               {unmatchedCol3.map((ev) => (
                 <EventCard key={ev.id} event={ev} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[ev.id]} barVenues={barVenuesMap?.[ev.id]} />
               ))}
@@ -278,16 +278,16 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
       </div>
 
       {/* Mobile: single column (original layout), also used when no right column */}
-      <div className={`space-y-10 ${hasRightColumn ? "lg:hidden" : ""}`}>
+      <div className={`space-y-8 ${hasRightColumn ? "lg:hidden" : ""}`}>
         {sortedDates.map((dateKey) => (
           <div key={dateKey}>
-            <div className="mb-4 flex items-center gap-3">
-              <h3 className="shrink-0 font-display text-lg text-foreground/70">
+            <div className="mb-3 flex items-center gap-3">
+              <h3 className="shrink-0 font-display text-base text-foreground/70">
                 {format(parseISO(dateKey), "EEEE, MMMM d")}
               </h3>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {[...(grouped[dateKey] ?? []), ...hotelEvents.filter((h) =>
                 format(parseISO(h.start_datetime), "yyyy-MM-dd") === dateKey
               )]
@@ -305,14 +305,14 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
 
         {shoppingEvents.length > 0 && (
           <div>
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
-              <h3 className="shrink-0 font-display text-lg text-foreground/70">
+              <h3 className="shrink-0 font-display text-base text-foreground/70">
                 Shopping
               </h3>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {shoppingEvents.map((event) => (
                 <EventCard key={event.id} event={event} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[event.id]} barVenues={barVenuesMap?.[event.id]} />
               ))}
@@ -322,14 +322,14 @@ export function EventList({ events, readOnly, attachmentsMap, shoppingStoresMap,
 
         {barsEvents.length > 0 && (
           <div>
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-3 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
-              <h3 className="shrink-0 font-display text-lg text-foreground/70">
+              <h3 className="shrink-0 font-display text-base text-foreground/70">
                 Bars
               </h3>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {barsEvents.map((event) => (
                 <EventCard key={event.id} event={event} readOnly={readOnly} shoppingStores={shoppingStoresMap?.[event.id]} barVenues={barVenuesMap?.[event.id]} />
               ))}

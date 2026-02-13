@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ExternalLink, MapPin, Star, DollarSign, UtensilsCrossed, CalendarPlus } from "lucide-react";
+import { MapPin, UtensilsCrossed, DollarSign, Star, CalendarPlus } from "lucide-react";
 import { buildGoogleCalendarUrl } from "@/lib/calendar";
+import { DetailCardWrapper, DetailActionLink, DetailMapImage } from "./detail-card-wrapper";
 import type { TripEvent } from "@/lib/types";
 
 function parseBenEatsId(confirmationNumber: string | null): string | null {
@@ -23,7 +23,6 @@ function parseNotesMeta(notes: string | null): { cuisine?: string; price?: strin
 }
 
 export function RestaurantDetailCard({ event }: { event: TripEvent }) {
-  const [mapError, setMapError] = useState(false);
   const benEatsId = parseBenEatsId(event.confirmation_number);
   const meta = parseNotesMeta(event.notes);
   const googleMapsUrl = event.description?.startsWith("https://www.google.com/maps") ? event.description : null;
@@ -33,18 +32,9 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
     : null;
 
   return (
-    <div className="space-y-3 pt-3 border-t border-border/50">
-      {mapUrl && !mapError && (
-        <div className="overflow-hidden rounded-md max-w-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={mapUrl}
-            alt="Restaurant location"
-            className="w-full h-auto"
-            loading="lazy"
-            onError={() => setMapError(true)}
-          />
-        </div>
+    <DetailCardWrapper>
+      {mapUrl && (
+        <DetailMapImage src={mapUrl} alt="Restaurant location" />
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
@@ -70,46 +60,23 @@ export function RestaurantDetailCard({ event }: { event: TripEvent }) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         {benEatsId && (
-          <a
-            href={`https://beneats.ai/restaurant/${benEatsId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-          >
+          <DetailActionLink href={`https://beneats.ai/restaurant/${benEatsId}`}>
             View on BenEats
-            <ExternalLink className="h-3 w-3" />
-          </a>
+          </DetailActionLink>
         )}
 
         {googleMapsUrl && (
-          <a
-            href={googleMapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-          >
-            <MapPin className="h-3.5 w-3.5" />
+          <DetailActionLink href={googleMapsUrl} icon={MapPin}>
             Google Maps
-            <ExternalLink className="h-3 w-3" />
-          </a>
+          </DetailActionLink>
         )}
 
-        <a
-          href={buildGoogleCalendarUrl(event)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
-          <CalendarPlus className="h-3.5 w-3.5" />
+        <DetailActionLink href={buildGoogleCalendarUrl(event)} icon={CalendarPlus}>
           Add to Google Calendar
-          <ExternalLink className="h-3 w-3" />
-        </a>
+        </DetailActionLink>
       </div>
-    </div>
+    </DetailCardWrapper>
   );
 }

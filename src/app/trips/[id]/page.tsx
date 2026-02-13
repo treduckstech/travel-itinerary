@@ -1,18 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TripCalendar } from "@/components/calendar/trip-calendar";
 import { EventList } from "@/components/events/event-list";
 import { EventFormDialog } from "@/components/events/event-form-dialog";
 import { TodoList } from "@/components/todos/todo-list";
-import { DeleteTripButton } from "@/components/trips/delete-trip-button";
-import { ShareDialog } from "@/components/trips/share-dialog";
-import { MapPin, Calendar, Pencil } from "lucide-react";
+import { TripActions } from "@/components/trips/trip-actions";
+import { MapPin, Calendar } from "lucide-react";
 import type { Trip, TripEvent, Todo, EventAttachment, ShoppingStore, BarVenue } from "@/lib/types";
 
 interface TripDetailPageProps {
@@ -112,12 +109,12 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl sm:text-5xl">{typedTrip.name}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-5 text-muted-foreground">
-            <span className="flex items-center gap-1.5 text-base font-medium text-foreground/70">
+          <h1 className="font-display text-2xl sm:text-3xl tracking-tight">{typedTrip.name}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-4 text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 text-primary" />
               {typedTrip.destination}
             </span>
@@ -131,39 +128,36 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {isOwner && (
-            <>
-              <ShareDialog tripId={id} shareToken={typedTrip.share_token} />
-              <Link href={`/trips/${id}/edit`}>
-                <Button variant="outline" size="sm">
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-              </Link>
-              <DeleteTripButton tripId={id} eventCount={typedEvents.length} todoCount={typedTodos.length} />
-            </>
-          )}
-        </div>
+        {isOwner && (
+          <TripActions
+            tripId={id}
+            shareToken={typedTrip.share_token}
+            eventCount={typedEvents.length}
+            todoCount={typedTodos.length}
+          />
+        )}
       </div>
 
       <Tabs defaultValue="itinerary">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <TabsList>
+          <TabsList variant="line">
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="todos">
-              To Do ({typedTodos.length})
+              To Do
+              {typedTodos.length > 0 && (
+                <span className="ml-1.5 rounded-md bg-muted px-1.5 py-0.5 text-xs">{typedTodos.length}</span>
+              )}
             </TabsTrigger>
           </TabsList>
           <EventFormDialog tripId={id} />
         </div>
 
-        <TabsContent value="itinerary" className="mt-6">
+        <TabsContent value="itinerary" className="mt-4">
           <EventList events={typedEvents} attachmentsMap={attachmentsMap} shoppingStoresMap={shoppingStoresMap} barVenuesMap={barVenuesMap} />
         </TabsContent>
 
-        <TabsContent value="calendar" className="mt-6">
+        <TabsContent value="calendar" className="mt-4">
           <TripCalendar
             events={typedEvents}
             tripStart={typedTrip.start_date}
@@ -171,7 +165,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           />
         </TabsContent>
 
-        <TabsContent value="todos" className="mt-6">
+        <TabsContent value="todos" className="mt-4">
           <TodoList tripId={id} todos={typedTodos} />
         </TabsContent>
       </Tabs>
