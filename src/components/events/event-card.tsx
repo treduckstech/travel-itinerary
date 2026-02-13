@@ -245,34 +245,34 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
       className={`flex flex-col rounded-lg border bg-card transition-all duration-200 hover:bg-accent/30 ${fillHeight ? "h-full overflow-hidden" : ""}`}
     >
       <Collapsible open={!!expanded} onOpenChange={expandable ? setExpanded : undefined}>
-        <div className="flex items-center gap-2 px-3 py-2.5">
+        <div className="flex items-start gap-2 px-3 py-2.5">
           <CollapsibleTrigger
             asChild
             disabled={!expandable}
           >
             <button
               type="button"
-              className={`flex min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-sm ${expandable ? "cursor-pointer" : "cursor-default"}`}
+              className={`flex min-w-0 flex-1 items-start gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-sm ${expandable ? "cursor-pointer" : "cursor-default"}`}
               tabIndex={0}
               aria-expanded={expandable ? !!expanded : undefined}
             >
-              <Icon className={`h-5 w-5 shrink-0 ${config.color}`} />
-              <span className="min-w-0 flex-1 flex items-baseline gap-1.5 overflow-hidden">
-                <span className="truncate text-sm font-medium">{displayTitle}</span>
+              <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${config.color}`} />
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{displayTitle}</span>
                 {metaSegments.length > 0 && (
-                  <span className="hidden sm:flex shrink-0 items-baseline gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                     {metaSegments.map((seg, i) => (
-                      <span key={i} className="flex items-baseline gap-1">
-                        <span className="text-muted-foreground/50">&middot;</span>
+                      <span key={i} className="flex items-center gap-1">
+                        {i > 0 && <span className="text-muted-foreground/50">&middot;</span>}
                         <span className="truncate max-w-[200px]">{seg}</span>
                       </span>
                     ))}
                   </span>
                 )}
-              </span>
+              </div>
               {expandable && (
                 <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                  className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
                 />
               )}
             </button>
@@ -300,18 +300,6 @@ export function EventCard({ event, readOnly, showDateRange, fillHeight, attachme
             </div>
           )}
         </div>
-
-        {/* Mobile metadata line (below title on small screens) */}
-        {metaSegments.length > 0 && (
-          <div className="flex items-center gap-1.5 px-3 pb-2 text-xs text-muted-foreground sm:hidden">
-            {metaSegments.map((seg, i) => (
-              <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span className="text-muted-foreground/50">&middot;</span>}
-                <span className="truncate">{seg}</span>
-              </span>
-            ))}
-          </div>
-        )}
 
         <CollapsibleContent>
           {event.type === "travel" && event.sub_type === "drive" && (
